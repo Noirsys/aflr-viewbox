@@ -1,58 +1,73 @@
-# aFLR Viewbox
+# React + TypeScript + Vite
 
-This repository contains the source code and specifications for the **aFLR React viewbox**, a 1280×720 broadcast renderer used by the Ashtabula FrontLine Report (aFLR) autonomous news system. The viewbox receives **WebSocket** messages from backend agents and updates on‑screen elements accordingly. It renders a continuous news broadcast as a single canvas suitable for streaming or screen capture.
+This template provides a minimal setup to get React working in Vite with HMR and some ESLint rules.
 
-## Repository Structure
+Currently, two official plugins are available:
 
+- [@vitejs/plugin-react](https://github.com/vitejs/vite-plugin-react/blob/main/packages/plugin-react) uses [Babel](https://babeljs.io/) (or [oxc](https://oxc.rs) when used in [rolldown-vite](https://vite.dev/guide/rolldown)) for Fast Refresh
+- [@vitejs/plugin-react-swc](https://github.com/vitejs/vite-plugin-react/blob/main/packages/plugin-react-swc) uses [SWC](https://swc.rs/) for Fast Refresh
+
+## React Compiler
+
+The React Compiler is not enabled on this template because of its impact on dev & build performances. To add it, see [this documentation](https://react.dev/learn/react-compiler/installation).
+
+## Expanding the ESLint configuration
+
+If you are developing a production application, we recommend updating the configuration to enable type-aware lint rules:
+
+```js
+export default defineConfig([
+  globalIgnores(['dist']),
+  {
+    files: ['**/*.{ts,tsx}'],
+    extends: [
+      // Other configs...
+
+      // Remove tseslint.configs.recommended and replace with this
+      tseslint.configs.recommendedTypeChecked,
+      // Alternatively, use this for stricter rules
+      tseslint.configs.strictTypeChecked,
+      // Optionally, add this for stylistic rules
+      tseslint.configs.stylisticTypeChecked,
+
+      // Other configs...
+    ],
+    languageOptions: {
+      parserOptions: {
+        project: ['./tsconfig.node.json', './tsconfig.app.json'],
+        tsconfigRootDir: import.meta.dirname,
+      },
+      // other options...
+    },
+  },
+])
 ```
-aflr-viewbox/
-├── AGENTS.md              # Instructions and guidelines for autonomous agent development
-├── README.md              # This file
-├── docs/
-│   └── protocol.md        # Canonical WebSocket protocol specification
-├── scripts/
-│   └── run-demo-show.ts   # Demo script to seed assets and simulate a short newscast
-└── (other files…)        # Your React/Vite project files (to be implemented)
+
+You can also install [eslint-plugin-react-x](https://github.com/Rel1cx/eslint-react/tree/main/packages/plugins/eslint-plugin-react-x) and [eslint-plugin-react-dom](https://github.com/Rel1cx/eslint-react/tree/main/packages/plugins/eslint-plugin-react-dom) for React-specific lint rules:
+
+```js
+// eslint.config.js
+import reactX from 'eslint-plugin-react-x'
+import reactDom from 'eslint-plugin-react-dom'
+
+export default defineConfig([
+  globalIgnores(['dist']),
+  {
+    files: ['**/*.{ts,tsx}'],
+    extends: [
+      // Other configs...
+      // Enable lint rules for React
+      reactX.configs['recommended-typescript'],
+      // Enable lint rules for React DOM
+      reactDom.configs.recommended,
+    ],
+    languageOptions: {
+      parserOptions: {
+        project: ['./tsconfig.node.json', './tsconfig.app.json'],
+        tsconfigRootDir: import.meta.dirname,
+      },
+      // other options...
+    },
+  },
+])
 ```
-
-## Getting Started
-
-1. **Install dependencies** (for the demo script):
-   ```bash
-   pnpm install
-   pnpm add -D ws tsx
-   ```
-
-2. **Run the Vite development server** (after you implement the React viewbox):
-   ```bash
-   pnpm dev
-   ```
-
-3. **Seed demo assets and start a mock broadcast**:
-   ```bash
-   pnpm tsx scripts/run-demo-show.ts --seed
-   ```
-
-The demo script will populate `public/media/` with sample audio, images, and ticker files if they do not already exist. It will then connect to the WebSocket server at `ws://localhost:8088` and send a sequence of messages to exercise all of the viewbox’s update types. Adjust the WebSocket URL by passing `--ws ws://yourserver:port` or setting the `WS_URL` environment variable.
-
-## Protocol Specification
-
-See `docs/protocol.md` for a detailed description of the WebSocket message format, media resolution rules, and supported update types. This document is the contract between the backend message sender and the front‑end viewbox renderer. All implementations must adhere to this contract.
-
-## Agent Development
-
-The file `AGENTS.md` provides guidelines for developers (human or AI) working on this codebase. It outlines the mission, constraints, style preferences, and definition of done for tasks related to the viewbox. Use these instructions when orchestrating autonomous agent workflows.
-
-## Running the Demo
-
-To use the included demo script, ensure you have a WebSocket relay server running. The script does not start the WebSocket server itself; it simply connects to the URL you specify. A simple WS relay that accepts messages and broadcasts them to all clients can be found in the aFLR backend repository (see `broadcast-server.js`).
-
-After running the demo script, open the viewbox in a browser (once implemented) and observe the updates: headlines, images, ticker, audio narration, and a simulated emergency alert. The success of this sequence indicates that the protocol and media handling are working correctly.
-
-## Contributions
-
-All contributions to improve the viewbox implementation, documentation, and tooling are welcome. If you intend to contribute via autonomous agents, ensure they respect the guidelines in `AGENTS.md`.
-
----
-
-This project is maintained by Noirsys AI for the Ashtabula FrontLine Report. For questions or feedback, please contact Michael A. Vega.
