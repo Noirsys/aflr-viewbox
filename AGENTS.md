@@ -9,6 +9,8 @@ Build a React+Vite 1280×720 broadcast "viewbox" that is controlled via WebSocke
 - **Render at exactly 1280×720 internally**. The viewbox must preserve the original dimensions for proper capture and streaming.
 - **No side effects outside of controlled React patterns**. Do not mutate the DOM directly; use React state, refs, and effects.
 - **Definition of done**: A task is complete only when all linting, tests, build steps, and the demo show script run without errors. The output must include `<promise>DONE</promise>` at the end only when all tasks meet acceptance criteria.
+    - * Must run: npm ci then npm run verify
+    - * Only mark complete if CI passes
 
 ## Style Guidelines
 - Prefer small, composable React components. Separate concerns (audio, video, ticker, overlays) into their own modules.
