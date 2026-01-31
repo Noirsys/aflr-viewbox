@@ -183,11 +183,15 @@ export const parseIncomingMessage = (raw: string, debugEnabled: boolean): Broadc
       return message
     }
     case 'backgroundaudioUpdate': {
-      const audioSrc = readNonEmptyString(data.audioSrc)
+      if (!('audioSrc' in data)) return null
+
+      const audioSrc =
+        data.audioSrc === null ? null : readNonEmptyString(data.audioSrc)
+      if (audioSrc === null && data.audioSrc !== null) return null
       const message: BackgroundAudioUpdateMessage = {
         type,
         timestamp,
-        data: { audioSrc: audioSrc ?? null },
+        data: { audioSrc },
       }
       return message
     }
