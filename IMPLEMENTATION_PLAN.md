@@ -57,7 +57,7 @@
 
 **- \[x] 005 Add viewbox spec + reference screenshots to repo (docs/viewbox_spec.md + docs/reference/*)**
 
-**- \[ ] 010 WS protocol engine: typed BroadcastState + reducer + safe parsing + connection status**
+**- \[x] 010 WS protocol engine: typed BroadcastState + reducer + safe parsing + connection status**
 
 **- \[ ] 020 WebSocket reconnect/backoff + requestState/stateSync plumbing**
 
@@ -106,6 +106,5 @@
 **- \[ ] 310 Rate-limit / debounce rapid WS updates to prevent render thrash**
 
 **- \[ ] 320 Add telemetry hooks (console / optional endpoint) for agent debugging**
-
 
 
