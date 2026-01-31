@@ -1,42 +1,87 @@
-#root {
-  max-width: 1280px;
-  margin: 0 auto;
-  padding: 2rem;
+.app {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 24px;
+  padding: 24px;
+}
+
+.viewbox-stage {
+  width: 1280px;
+  height: 720px;
+  border: 2px solid #1f2937;
+  border-radius: 16px;
+  background: radial-gradient(circle at top, #111827, #0b0f1a);
+  box-shadow: 0 20px 60px rgba(15, 23, 42, 0.5);
+  position: relative;
+  overflow: hidden;
+}
+
+.viewbox-placeholder {
+  position: absolute;
+  inset: 0;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  color: #e5e7eb;
   text-align: center;
+  gap: 12px;
 }
 
-.logo {
-  height: 6em;
-  padding: 1.5em;
-  will-change: filter;
-  transition: filter 300ms;
-}
-.logo:hover {
-  filter: drop-shadow(0 0 2em #646cffaa);
-}
-.logo.react:hover {
-  filter: drop-shadow(0 0 2em #61dafbaa);
+.viewbox-placeholder h1 {
+  font-size: 2.5rem;
+  margin: 0;
 }
 
-@keyframes logo-spin {
-  from {
-    transform: rotate(0deg);
+.debug-panel {
+  width: min(1280px, 92vw);
+  background: rgba(15, 23, 42, 0.9);
+  border: 1px solid #334155;
+  border-radius: 12px;
+  padding: 20px;
+  color: #e2e8f0;
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
+  gap: 16px;
+  box-shadow: 0 12px 40px rgba(2, 6, 23, 0.4);
+}
+
+.debug-panel h2 {
+  grid-column: 1 / -1;
+  margin: 0;
+  font-size: 1.2rem;
+  text-transform: uppercase;
+  letter-spacing: 0.08em;
+  color: #cbd5f5;
+}
+
+.debug-section {
+  background: rgba(30, 41, 59, 0.6);
+  border-radius: 10px;
+  padding: 12px;
+  border: 1px solid rgba(148, 163, 184, 0.2);
+}
+
+.debug-section h3 {
+  margin: 0 0 8px 0;
+  font-size: 0.95rem;
+  color: #93c5fd;
+}
+
+.debug-section p {
+  margin: 4px 0;
+  font-size: 0.85rem;
+}
+
+.debug-error {
+  color: #fca5a5;
+}
+
+@media (max-width: 1320px) {
+  .viewbox-stage {
+    width: 100%;
+    height: auto;
+    aspect-ratio: 16 / 9;
   }
-  to {
-    transform: rotate(360deg);
-  }
-}
-
-@media (prefers-reduced-motion: no-preference) {
-  a:nth-of-type(2) .logo {
-    animation: logo-spin infinite 20s linear;
-  }
-}
-
-.card {
-  padding: 2em;
-}
-
-.read-the-docs {
-  color: #888;
 }
