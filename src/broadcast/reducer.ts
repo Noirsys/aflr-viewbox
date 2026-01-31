@@ -228,9 +228,8 @@ export const broadcastReducer = (state: BroadcastState, action: BroadcastAction)
             ...stateWithMeta,
             layer5: {
               ...stateWithMeta.layer5,
-              hideAfterMs: stalltime,
-              hideAt = now + stalltime,
-              visible: true,
+              hideAfterMs: message.data.stalltime,
+              visible: false,
             },
           }
         case 'emergencyAlert':

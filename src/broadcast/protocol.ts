@@ -182,23 +182,15 @@ export const parseIncomingMessage = (raw: string, debugEnabled: boolean): Broadc
       }
       return message
     }
-    case "backgroundaudioUpdate": {
-      // If the producer omitted the field entirely, ignore message.
-      if (!Object.prototype.hasOwnProperty.call(data, "audioSrc")) return null;
-
-      const raw = (data as any).audioSrc;
-
-      // Explicit null = stop background audio
-      if (raw === null) {
-        return { type, timestamp, data: { audioSrc: null } };
+    case 'backgroundaudioUpdate': {
+      const audioSrc = readNonEmptyString(data.audioSrc)
+      const message: BackgroundAudioUpdateMessage = {
+        type,
+        timestamp,
+        data: { audioSrc: audioSrc ?? null },
       }
-
-  // Non-empty string = play/update
-  const audioSrc = readNonEmptyString(raw);
-  if (!audioSrc) return null;
-
-  return { type, timestamp, data: { audioSrc } };
-}
+      return message
+    }
     case 'mainaudioUpdate': {
       const command = readString(data.command)
       if (!command || !isMainAudioCommand(command)) return null
