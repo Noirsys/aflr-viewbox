@@ -2,6 +2,19 @@
 
 
 
+**## Visual Ground Truth (Do not invent layout)**
+
+**- Pixel spec: `docs/viewbox_spec.md`**
+
+**- References:**
+  - `docs/reference/figure-2.4_layer4_layout.png`
+  - `docs/reference/figure-2.5_full_mockup.png`
+  - `docs/nFLR.pdf` (reference doc)
+
+** Codex tasks must match these references. If any ambiguity exists, prefer the pixel spec. **
+
+
+
 **## Definition of Done**
 
 **- `npm ci`**
@@ -11,6 +24,20 @@
 **- `npm run verify` (if present)**
 
 **- GitHub Actions CI passes on PR**
+
+
+
+**## Rules for Codex**
+
+**- Work on exactly ONE checklist item per PR.**
+
+**- Do not restyle layout unless the item explicitly says to.**
+
+**- Must run and pass `npm run build` (and `npm run verify` if present).**
+
+**- Update this checklist: check off completed item and add notes if needed.**
+
+**- New tasks may be added only if required to complete the current item or to fix CI failures.**
 
 
 
@@ -28,6 +55,8 @@
 
 **### Foundation**
 
+**- \[x] 005 Add viewbox spec + reference screenshots to repo (docs/viewbox_spec.md + docs/reference/*)**
+
 **- \[ ] 010 WS protocol engine: typed BroadcastState + reducer + safe parsing + connection status**
 
 **- \[ ] 020 WebSocket reconnect/backoff + requestState/stateSync plumbing**
@@ -40,21 +69,21 @@
 
 **### Rendering Layers (React)**
 
-**- \[ ] 100 Viewbox shell: fixed 1280x720 stage with absolute layer stacking**
+**- \[ ] 100 Viewbox shell: fixed 1280×720 stage with absolute layer stacking**
 
-**- \[ ] 110 Layer2 background video: supports src + show/hide + fit/crop rules**
+**- \[ ] 110 Layer4: implement pixel-perfect layout boxes from docs/viewbox_spec.md (+ ?guides=1)**
 
-**- \[ ] 120 Layer1/main audio playback: supports src + volume + play/stop**
+**- \[ ] 120 Layer2 background video: full-frame video under Layer4**
 
-**- \[ ] 130 Layer4 lower third: headline/subtext + styling baseline**
+**- \[ ] 130 Layer1 main audio: playback + volume + autoplay-safe behavior**
 
-**- \[ ] 140 Marquee/ticker: scrolling items + bg/fg colors + speed**
+**- \[ ] 140 Layer5 overlay: fullscreen video + emergency alert + hideLayer5**
 
-**- \[ ] 150 Weather widget: temp/condition + icon placeholder**
+**- \[ ] 150 Marquee/ticker: scroll system + item parsing + speed**
 
-**- \[ ] 160 Layer5: fullscreen video + emergency alert + hideLayer5 behavior**
+**- \[ ] 160 Weather + clock widgets: render within exact bounds**
 
-**- \[ ] 170 Materials rendering: image/video/audio selection + preloading**
+**- \[ ] 170 Main content renderer: image/video/audio selection + preload + fallback**
 
 
 
