@@ -1,34 +1,84 @@
-import { useState } from 'react'
-import reactLogo from './assets/react.svg'
-import viteLogo from '/vite.svg'
 import './App.css'
+import { useBroadcast } from './broadcast/useBroadcast'
 
-function App() {
-  const [count, setCount] = useState(0)
+const DEBUG_QUERY = 'debug'
+
+function useDebugEnabled() {
+  if (typeof window === 'undefined') {
+    return false
+  }
+
+  return new URLSearchParams(window.location.search).get(DEBUG_QUERY) === '1'
+}
+
+function DebugPanel() {
+  const { state } = useBroadcast()
 
   return (
-    <>
-      <div>
-        <a href="https://vite.dev" target="_blank">
-          <img src={viteLogo} className="logo" alt="Vite logo" />
-        </a>
-        <a href="https://react.dev" target="_blank">
-          <img src={reactLogo} className="logo react" alt="React logo" />
-        </a>
+    <aside className="debug-panel">
+      <h2>Debug Panel</h2>
+      <div className="debug-section">
+        <h3>Connection</h3>
+        <p>Status: {state.connection.status}</p>
+        <p>Reconnect Attempt: {state.connection.reconnectAttempt}</p>
+        {state.connection.lastError ? (
+          <p className="debug-error">Error: {state.connection.lastError}</p>
+        ) : null}
       </div>
-      <h1>Vite + React</h1>
-      <div className="card">
-        <button onClick={() => setCount((count) => count + 1)}>
-          count is {count}
-        </button>
+      <div className="debug-section">
+        <h3>Layer 1</h3>
+        <p>Background Audio: {state.layer1.backgroundAudioSrc ?? '—'}</p>
         <p>
-          Edit <code>src/App.tsx</code> and save to test HMR
+          Main Audio: {state.layer1.mainAudio.command ?? '—'}
+          {state.layer1.mainAudio.filename ? ` (${state.layer1.mainAudio.filename})` : ''}
         </p>
       </div>
-      <p className="read-the-docs">
-        Click on the Vite and React logos to learn more
-      </p>
-    </>
+      <div className="debug-section">
+        <h3>Layer 2</h3>
+        <p>Background Video: {state.layer2.backgroundVideoSrc ?? '—'}</p>
+      </div>
+      <div className="debug-section">
+        <h3>Layer 4</h3>
+        <p>Headline: {state.layer4.headline || '—'}</p>
+        <p>Subtext: {state.layer4.subtext || '—'}</p>
+        <p>
+          Main Content: {state.layer4.mainContent.mediaType ?? '—'}
+          {state.layer4.mainContent.materials
+            ? ` (${state.layer4.mainContent.materials})`
+            : ''}
+        </p>
+        <p>Weather: {state.layer4.weather ?? '—'}</p>
+        <p>Marquee File: {state.layer4.marqueeFile ?? '—'}</p>
+      </div>
+      <div className="debug-section">
+        <h3>Layer 5</h3>
+        <p>Fullscreen Video: {state.layer5.fullscreenVideoSrc ?? '—'}</p>
+        <p>Emergency Alert: {state.layer5.emergencyAlert ?? '—'}</p>
+        <p>Visible: {state.layer5.visible ? 'yes' : 'no'}</p>
+        <p>Hide After: {state.layer5.hideAfterMs ?? '—'}</p>
+      </div>
+      <div className="debug-section">
+        <h3>Last Message</h3>
+        <p>Type: {state.meta.lastMessageType ?? '—'}</p>
+        <p>Timestamp: {state.meta.lastMessageTimestamp ?? '—'}</p>
+      </div>
+    </aside>
+  )
+}
+
+function App() {
+  const debugEnabled = useDebugEnabled()
+
+  return (
+    <div className="app">
+      <div className="viewbox-stage">
+        <div className="viewbox-placeholder">
+          <h1>aFLR Viewbox</h1>
+          <p>Waiting for WebSocket updates...</p>
+        </div>
+      </div>
+      {debugEnabled ? <DebugPanel /> : null}
+    </div>
   )
 }
 
