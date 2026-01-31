@@ -1,34 +1,66 @@
-import { useState } from 'react'
-import reactLogo from './assets/react.svg'
-import viteLogo from '/vite.svg'
 import './App.css'
+import { useBroadcast } from './broadcast/context'
 
-function App() {
-  const [count, setCount] = useState(0)
+const isDebugEnabled = () => {
+  if (typeof window === 'undefined') return false
+  return new URLSearchParams(window.location.search).get('debug') === '1'
+}
+
+const DebugPanel = () => {
+  const { state } = useBroadcast()
 
   return (
-    <>
-      <div>
-        <a href="https://vite.dev" target="_blank">
-          <img src={viteLogo} className="logo" alt="Vite logo" />
-        </a>
-        <a href="https://react.dev" target="_blank">
-          <img src={reactLogo} className="logo react" alt="React logo" />
-        </a>
+    <section className="debug-panel">
+      <h2>Debug Panel</h2>
+      <dl>
+        <dt>Connection</dt>
+        <dd>{state.connection.status}</dd>
+        <dt>Retry Count</dt>
+        <dd>{state.connection.retryCount}</dd>
+        <dt>Last Message</dt>
+        <dd>{state.connection.lastMessageAt ?? '—'}</dd>
+        <dt>Headline</dt>
+        <dd>{state.layer4.headline || '—'}</dd>
+        <dt>Subtext</dt>
+        <dd>{state.layer4.subtext || '—'}</dd>
+        <dt>Background Video</dt>
+        <dd>{state.layer2.backgroundVideo || '—'}</dd>
+        <dt>Background Audio</dt>
+        <dd>{state.layer1.backgroundAudio || '—'}</dd>
+        <dt>Main Audio</dt>
+        <dd>
+          {state.layer1.mainAudio.command
+            ? `${state.layer1.mainAudio.command} (${state.layer1.mainAudio.filename ?? '—'})`
+            : '—'}
+        </dd>
+        <dt>Main Content</dt>
+        <dd>{state.layer4.mainContent.materials || '—'}</dd>
+        <dt>Weather</dt>
+        <dd>
+          {state.layer4.weather !== null ? `${state.layer4.weather}°F` : '—'}
+        </dd>
+        <dt>Marquee File</dt>
+        <dd>{state.layer4.marqueeFile || '—'}</dd>
+        <dt>Layer5 Video</dt>
+        <dd>{state.layer5.fullscreenVideo || '—'}</dd>
+        <dt>Emergency Alert</dt>
+        <dd>{state.layer5.emergencyAlert || '—'}</dd>
+      </dl>
+    </section>
+  )
+}
+
+function App() {
+  const showDebug = isDebugEnabled()
+
+  return (
+    <div className="app-root">
+      <div className="viewbox-placeholder">
+        <span>aFLR Viewbox</span>
+        <span className="status-pill">{showDebug ? 'Debug On' : 'Idle'}</span>
       </div>
-      <h1>Vite + React</h1>
-      <div className="card">
-        <button onClick={() => setCount((count) => count + 1)}>
-          count is {count}
-        </button>
-        <p>
-          Edit <code>src/App.tsx</code> and save to test HMR
-        </p>
-      </div>
-      <p className="read-the-docs">
-        Click on the Vite and React logos to learn more
-      </p>
-    </>
+      {showDebug ? <DebugPanel /> : null}
+    </div>
   )
 }
 
