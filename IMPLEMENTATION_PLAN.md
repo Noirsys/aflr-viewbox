@@ -63,7 +63,7 @@
 
 **- \[x] 030 Debug overlay UI (`?debug=1`) + state dump**
 
-**- \[ ] 040 Add `verify` script to package.json (if missing) and keep CI aligned**
+**- \[x] 040 Add `verify` script to package.json (if missing) and keep CI aligned**
 
 
 
