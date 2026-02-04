@@ -1,3 +1,4 @@
+import { useCallback, useEffect, useRef, useState } from 'react'
 import './App.css'
 import { useBroadcast } from './broadcast/useBroadcast'
 
@@ -113,6 +114,126 @@ function Layer2BackgroundVideo() {
   )
 }
 
+function Layer1MainAudio() {
+  const { state } = useBroadcast()
+  const audioRef = useRef<HTMLAudioElement | null>(null)
+  const pendingPlayRef = useRef<(() => void) | null>(null)
+  const queueRef = useRef<string[]>([])
+  const queueIndexRef = useRef(0)
+  const [autoplayBlocked, setAutoplayBlocked] = useState(false)
+  const volume = state.layer1.volume
+  const command = state.layer1.mainAudio.command
+  const filename = state.layer1.mainAudio.filename
+  const seqlength = state.layer1.mainAudio.seqlength
+
+  const playFromQueue = useCallback(() => {
+    const audio = audioRef.current
+    if (!audio) return
+
+    const queue = queueRef.current
+    const index = queueIndexRef.current
+
+    if (queue.length === 0) {
+      audio.removeAttribute('src')
+      audio.load()
+      return
+    }
+
+    if (index >= queue.length) {
+      return
+    }
+
+    const resolvedSrc = `/media/audio/${queue[index]}`
+    if (audio.getAttribute('src') !== resolvedSrc) {
+      audio.src = resolvedSrc
+    }
+
+    const playPromise = audio.play()
+    if (playPromise) {
+      playPromise
+        .then(() => {
+          setAutoplayBlocked(false)
+          pendingPlayRef.current = null
+        })
+        .catch(() => {
+          setAutoplayBlocked(true)
+          pendingPlayRef.current = () => {
+            audio.play().catch(() => null)
+          }
+        })
+    }
+  }, [])
+
+  useEffect(() => {
+    const audio = audioRef.current
+    if (!audio) return
+    audio.volume = volume
+  }, [volume])
+
+  useEffect(() => {
+    const audio = audioRef.current
+    if (!audio) return
+
+    if (!command) return
+
+    if (command === 'pause') {
+      audio.pause()
+      return
+    }
+
+    if (command === 'stop') {
+      audio.pause()
+      audio.removeAttribute('src')
+      audio.load()
+      queueRef.current = []
+      queueIndexRef.current = 0
+      return
+    }
+
+    if (!filename) return
+
+    if (command === 'play_clip') {
+      queueRef.current = [filename]
+      queueIndexRef.current = 0
+      playFromQueue()
+      return
+    }
+
+    if (command === 'play_clip_sequence') {
+      if (!seqlength || seqlength < 1) return
+      const sequence = Array.from({ length: seqlength }, (_, index) => `${filename}_${index + 1}`)
+      queueRef.current = sequence
+      queueIndexRef.current = 0
+      playFromQueue()
+    }
+  }, [command, filename, seqlength, playFromQueue])
+
+  useEffect(() => {
+    if (!autoplayBlocked || !pendingPlayRef.current) return
+
+    const resume = () => {
+      pendingPlayRef.current?.()
+    }
+
+    window.addEventListener('pointerdown', resume)
+    window.addEventListener('keydown', resume)
+    return () => {
+      window.removeEventListener('pointerdown', resume)
+      window.removeEventListener('keydown', resume)
+    }
+  }, [autoplayBlocked])
+
+  const handleEnded = () => {
+    const queue = queueRef.current
+    if (queueIndexRef.current + 1 < queue.length) {
+      queueIndexRef.current += 1
+      playFromQueue()
+    }
+  }
+
+  return <audio ref={audioRef} onEnded={handleEnded} />
+}
+
 type Layer4LayoutProps = {
   debugEnabled: boolean
   guidesEnabled: boolean
@@ -182,7 +303,9 @@ function App() {
   return (
     <div className="app">
       <div className="viewbox-stage">
-        <div className="viewbox-layer viewbox-layer--1" aria-hidden="true" />
+        <div className="viewbox-layer viewbox-layer--1" aria-hidden="true">
+          <Layer1MainAudio />
+        </div>
         <div className="viewbox-layer viewbox-layer--2" aria-hidden="true">
           <Layer2BackgroundVideo />
         </div>

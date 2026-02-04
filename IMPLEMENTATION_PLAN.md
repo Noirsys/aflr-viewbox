@@ -75,7 +75,7 @@
 
 **- \[x] 120 Layer2 background video: full-frame video under Layer4**
 
-**- \[ ] 130 Layer1 main audio: playback + volume + autoplay-safe behavior**
+**- \[x] 130 Layer1 main audio: playback + volume + autoplay-safe behavior**
 
 **- \[ ] 140 Layer5 overlay: fullscreen video + emergency alert + hideLayer5**
 

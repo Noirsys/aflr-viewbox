@@ -100,7 +100,7 @@ export interface StateSyncMessage extends EnvelopeBase {
 }
 
 export interface StateSyncPayload {
-  layer1?: { activeAudio?: string | null }
+  layer1?: { activeAudio?: string | null; volume?: number }
   layer2?: { activeVideo?: string | null }
   layer4?: {
     headline?: string
@@ -135,6 +135,7 @@ export interface BroadcastState {
   }
   layer1: {
     backgroundAudioSrc: string | null
+    volume: number
     mainAudio: {
       command: MainAudioCommand | null
       filename: string | null

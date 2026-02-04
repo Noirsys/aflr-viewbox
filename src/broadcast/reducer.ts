@@ -14,6 +14,7 @@ export const initialState: BroadcastState = {
   },
   layer1: {
     backgroundAudioSrc: null,
+    volume: 1,
     mainAudio: {
       command: null,
       filename: null,
@@ -75,6 +76,13 @@ const applyStateSync = (state: BroadcastState, payload: StateSyncPayload): Broad
     nextState.layer1 = {
       ...nextState.layer1,
       backgroundAudioSrc: payload.layer1.activeAudio ?? null,
+    }
+  }
+
+  if (payload.layer1?.volume !== undefined) {
+    nextState.layer1 = {
+      ...nextState.layer1,
+      volume: payload.layer1.volume,
     }
   }
 
