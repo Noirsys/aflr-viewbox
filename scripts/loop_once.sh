@@ -23,15 +23,16 @@ git fetch origin
 git checkout "$BASE_BRANCH"
 git pull --ff-only origin "$BASE_BRANCH"
 
-# Parse next unchecked task from IMPLEMENTATION_PLAN.md
-NEXT_LINE="$(grep -E '^- \[ \] [0-9]{3} ' IMPLEMENTATION_PLAN.md | head -n 1 || true)"
+# Parse next unchecked task from IMPLEMENTATION_PLAN.md (allow optional markdown bold **...**)
+NEXT_LINE="$(grep -E '^\*{0,2}- \[ \] [0-9]{3} ' IMPLEMENTATION_PLAN.md | head -n 1 || true)"
 if [[ -z "$NEXT_LINE" ]]; then
   echo '{"done":true,"message":"No unchecked tasks found."}'
   exit 0
 fi
 
-TASK_ID="$(echo "$NEXT_LINE" | sed -E 's/^- \[ \] ([0-9]{3}) .*/\1/')"
-TASK_TEXT="$(echo "$NEXT_LINE" | sed -E 's/^- \[ \] [0-9]{3} //')"
+LINE_CLEAN="$(echo "$NEXT_LINE" | sed -E 's/^\*+//; s/\*+$//')"
+TASK_ID="$(echo "$LINE_CLEAN" | sed -E 's/^- \[ \] ([0-9]{3}) .*/\1/')"
+TASK_TEXT="$(echo "$LINE_CLEAN" | sed -E 's/^- \[ \] [0-9]{3} //')"
 
 # Create slug + branch
 SLUG="$(echo "$TASK_TEXT" | tr '[:upper:]' '[:lower:]' | sed -E 's/[^a-z0-9]+/-/g; s/^-+|-+$//g' | cut -c1-48)"
