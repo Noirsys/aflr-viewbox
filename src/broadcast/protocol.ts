@@ -85,8 +85,12 @@ const parseStateSync = (data: Record<string, unknown>): StateSyncPayload => {
 
   if (isRecord(data.layer1)) {
     const activeAudio = readString(data.layer1.activeAudio)
+    const volume = readNumber(data.layer1.volume)
     if (activeAudio !== null || data.layer1.activeAudio === null) {
       payload.layer1 = { activeAudio: activeAudio ?? null }
+    }
+    if (volume !== null) {
+      payload.layer1 = { ...(payload.layer1 ?? {}), volume }
     }
   }
 
