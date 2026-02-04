@@ -64,12 +64,36 @@ export function BroadcastProvider({ children }: { children: ReactNode }) {
       const socket = new WebSocket(WS_URL)
       socketRef.current = socket
 
+      const sendRequestState = () => {
+        if (socket.readyState !== WebSocket.OPEN) {
+          return
+        }
+
+        const payload = {
+          type: 'requestState',
+          timestamp: Date.now(),
+          data: {},
+        }
+
+        try {
+          socket.send(JSON.stringify(payload))
+          if (debugEnabled) {
+            console.debug('[ws] Sent requestState')
+          }
+        } catch (error) {
+          if (debugEnabled) {
+            console.debug('[ws] Failed to send requestState', error)
+          }
+        }
+      }
+
       socket.addEventListener('open', () => {
         reconnectAttemptRef.current = 0
         updateStatus('connected')
         if (debugEnabled) {
           console.debug('[ws] Connected')
         }
+        sendRequestState()
       })
 
       socket.addEventListener('message', (event) => {
