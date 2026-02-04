@@ -13,6 +13,7 @@ function useDebugEnabled() {
 
 function DebugPanel() {
   const { state } = useBroadcast()
+  const stateDump = JSON.stringify(state, null, 2)
 
   return (
     <aside className="debug-panel">
@@ -62,7 +63,23 @@ function DebugPanel() {
         <p>Type: {state.meta.lastMessageType ?? '—'}</p>
         <p>Timestamp: {state.meta.lastMessageTimestamp ?? '—'}</p>
       </div>
+      <div className="debug-section debug-section--full">
+        <h3>State Dump</h3>
+        <pre className="debug-dump">{stateDump}</pre>
+      </div>
     </aside>
+  )
+}
+
+function DebugOverlay() {
+  const { state } = useBroadcast()
+
+  return (
+    <div className="debug-overlay">
+      <span className="debug-overlay__label">Debug</span>
+      <span>WS: {state.connection.status}</span>
+      <span>Last: {state.meta.lastMessageType ?? '—'}</span>
+    </div>
   )
 }
 
@@ -76,6 +93,7 @@ function App() {
           <h1>aFLR Viewbox</h1>
           <p>Waiting for WebSocket updates...</p>
         </div>
+        {debugEnabled ? <DebugOverlay /> : null}
       </div>
       {debugEnabled ? <DebugPanel /> : null}
     </div>

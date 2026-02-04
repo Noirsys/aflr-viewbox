@@ -61,7 +61,7 @@
 
 **- \[x] 020 WebSocket reconnect/backoff + requestState/stateSync plumbing**
 
-**- \[ ] 030 Debug overlay UI (`?debug=1`) + state dump**
+**- \[x] 030 Debug overlay UI (`?debug=1`) + state dump**
 
 **- \[ ] 040 Add `verify` script to package.json (if missing) and keep CI aligned**
 
