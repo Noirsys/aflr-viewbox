@@ -16,7 +16,7 @@ function DebugPanel() {
 
   return (
     <aside className="debug-panel">
-      <h2>Debug Panel</h2>
+      <h2>Debug Overlay</h2>
       <div className="debug-section">
         <h3>Connection</h3>
         <p>Status: {state.connection.status}</p>
@@ -62,6 +62,10 @@ function DebugPanel() {
         <p>Type: {state.meta.lastMessageType ?? '—'}</p>
         <p>Timestamp: {state.meta.lastMessageTimestamp ?? '—'}</p>
       </div>
+      <div className="debug-section debug-dump">
+        <h3>State Dump</h3>
+        <pre>{JSON.stringify(state, null, 2)}</pre>
+      </div>
     </aside>
   )
 }
@@ -76,8 +80,8 @@ function App() {
           <h1>aFLR Viewbox</h1>
           <p>Waiting for WebSocket updates...</p>
         </div>
+        {debugEnabled ? <DebugPanel /> : null}
       </div>
-      {debugEnabled ? <DebugPanel /> : null}
     </div>
   )
 }

@@ -35,16 +35,22 @@
 }
 
 .debug-panel {
-  width: min(1280px, 92vw);
-  background: rgba(15, 23, 42, 0.9);
+  position: absolute;
+  top: 12px;
+  right: 12px;
+  width: 420px;
+  max-height: calc(100% - 24px);
+  overflow: auto;
+  background: rgba(15, 23, 42, 0.92);
   border: 1px solid #334155;
   border-radius: 12px;
-  padding: 20px;
+  padding: 16px;
   color: #e2e8f0;
   display: grid;
-  grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
-  gap: 16px;
+  grid-template-columns: 1fr;
+  gap: 12px;
   box-shadow: 0 12px 40px rgba(2, 6, 23, 0.4);
+  z-index: 10;
 }
 
 .debug-panel h2 {
@@ -76,6 +82,14 @@
 
 .debug-error {
   color: #fca5a5;
+}
+
+.debug-dump pre {
+  margin: 0;
+  font-size: 0.7rem;
+  line-height: 1.2;
+  white-space: pre-wrap;
+  word-break: break-word;
 }
 
 @media (max-width: 1320px) {
