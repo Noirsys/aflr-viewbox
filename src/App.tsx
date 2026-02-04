@@ -89,10 +89,16 @@ function App() {
   return (
     <div className="app">
       <div className="viewbox-stage">
-        <div className="viewbox-placeholder">
-          <h1>aFLR Viewbox</h1>
-          <p>Waiting for WebSocket updates...</p>
+        <div className="viewbox-layer viewbox-layer--1" aria-hidden="true" />
+        <div className="viewbox-layer viewbox-layer--2" aria-hidden="true" />
+        <div className="viewbox-layer viewbox-layer--3" aria-hidden="true" />
+        <div className="viewbox-layer viewbox-layer--4">
+          <div className="viewbox-placeholder">
+            <h1>aFLR Viewbox</h1>
+            <p>Waiting for WebSocket updates...</p>
+          </div>
         </div>
+        <div className="viewbox-layer viewbox-layer--5" aria-hidden="true" />
         {debugEnabled ? <DebugOverlay /> : null}
       </div>
       {debugEnabled ? <DebugPanel /> : null}

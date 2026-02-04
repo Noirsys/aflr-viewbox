@@ -69,7 +69,7 @@
 
 **### Rendering Layers (React)**
 
-**- \[ ] 100 Viewbox shell: fixed 1280×720 stage with absolute layer stacking**
+**- \[x] 100 Viewbox shell: fixed 1280×720 stage with absolute layer stacking**
 
 **- \[ ] 110 Layer4: implement pixel-perfect layout boxes from docs/viewbox_spec.md (+ ?guides=1)**
 

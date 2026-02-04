@@ -17,6 +17,31 @@
   overflow: hidden;
 }
 
+.viewbox-layer {
+  position: absolute;
+  inset: 0;
+}
+
+.viewbox-layer--1 {
+  z-index: 1;
+}
+
+.viewbox-layer--2 {
+  z-index: 2;
+}
+
+.viewbox-layer--3 {
+  z-index: 3;
+}
+
+.viewbox-layer--4 {
+  z-index: 4;
+}
+
+.viewbox-layer--5 {
+  z-index: 5;
+}
+
 .viewbox-placeholder {
   position: absolute;
   inset: 0;
@@ -62,7 +87,7 @@
   font-size: 0.75rem;
   text-transform: uppercase;
   letter-spacing: 0.05em;
-  z-index: 5;
+  z-index: 6;
 }
 
 .debug-overlay__label {
