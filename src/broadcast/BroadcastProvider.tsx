@@ -67,8 +67,16 @@ export function BroadcastProvider({ children }: { children: ReactNode }) {
       socket.addEventListener('open', () => {
         reconnectAttemptRef.current = 0
         updateStatus('connected')
+        socket.send(
+          JSON.stringify({
+            type: 'requestState',
+            timestamp: Date.now(),
+            data: {},
+          }),
+        )
         if (debugEnabled) {
           console.debug('[ws] Connected')
+          console.debug('[ws] Sent requestState')
         }
       })
 
