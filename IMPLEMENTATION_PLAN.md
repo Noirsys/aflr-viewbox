@@ -71,7 +71,7 @@
 
 **- \[x] 100 Viewbox shell: fixed 1280×720 stage with absolute layer stacking**
 
-**- \[ ] 110 Layer4: implement pixel-perfect layout boxes from docs/viewbox_spec.md (+ ?guides=1)**
+**- \[x] 110 Layer4: implement pixel-perfect layout boxes from docs/viewbox_spec.md (+ ?guides=1)**
 
 **- \[ ] 120 Layer2 background video: full-frame video under Layer4**
 

@@ -2,6 +2,7 @@ import './App.css'
 import { useBroadcast } from './broadcast/useBroadcast'
 
 const DEBUG_QUERY = 'debug'
+const GUIDES_QUERY = 'guides'
 
 function useDebugEnabled() {
   if (typeof window === 'undefined') {
@@ -9,6 +10,14 @@ function useDebugEnabled() {
   }
 
   return new URLSearchParams(window.location.search).get(DEBUG_QUERY) === '1'
+}
+
+function useGuidesEnabled() {
+  if (typeof window === 'undefined') {
+    return false
+  }
+
+  return new URLSearchParams(window.location.search).get(GUIDES_QUERY) === '1'
 }
 
 function DebugPanel() {
@@ -83,8 +92,71 @@ function DebugOverlay() {
   )
 }
 
+type Layer4LayoutProps = {
+  debugEnabled: boolean
+  guidesEnabled: boolean
+}
+
+function Layer4Layout({ debugEnabled, guidesEnabled }: Layer4LayoutProps) {
+  const { state } = useBroadcast()
+
+  const withPlaceholder = (value: string | null | undefined, placeholder: string) =>
+    value && value.length > 0 ? value : debugEnabled ? placeholder : ''
+
+  return (
+    <div className={`layer4 ${guidesEnabled ? 'layer4--guides' : ''}`}>
+      <section className="layer4__box layer4__title">
+        <div className="layer4__text layer4__text--title">
+          {withPlaceholder(null, 'Newscast Title')}
+        </div>
+      </section>
+      <section className="layer4__box layer4__main-content">
+        <div className="layer4__text layer4__text--body">
+          {withPlaceholder(null, 'Main Content')}
+        </div>
+      </section>
+      <section className="layer4__box layer4__live-feed">
+        <div className="layer4__text layer4__text--body">
+          {withPlaceholder(null, 'Live Feed / Stream')}
+        </div>
+      </section>
+      <section className="layer4__box layer4__headline">
+        <div className="layer4__text layer4__text--headline">
+          {withPlaceholder(state.layer4.headline, 'Story Headline')}
+        </div>
+      </section>
+      <section className="layer4__box layer4__logo">
+        <div className="layer4__text layer4__text--body">
+          {withPlaceholder(null, 'Icon / Logo')}
+        </div>
+      </section>
+      <section className="layer4__box layer4__subtext">
+        <div className="layer4__text layer4__text--subtext">
+          {withPlaceholder(state.layer4.subtext, 'Story Subtext')}
+        </div>
+      </section>
+      <section className="layer4__box layer4__weather">
+        <div className="layer4__text layer4__text--body">
+          {withPlaceholder(null, 'Weather')}
+        </div>
+      </section>
+      <section className="layer4__box layer4__clock">
+        <div className="layer4__text layer4__text--body">
+          {withPlaceholder(null, 'Time / Clock')}
+        </div>
+      </section>
+      <section className="layer4__box layer4__marquee">
+        <div className="layer4__text layer4__text--marquee">
+          {withPlaceholder(state.layer4.marqueeFile, 'Marquee / Ticker')}
+        </div>
+      </section>
+    </div>
+  )
+}
+
 function App() {
   const debugEnabled = useDebugEnabled()
+  const guidesEnabled = useGuidesEnabled()
 
   return (
     <div className="app">
@@ -93,10 +165,7 @@ function App() {
         <div className="viewbox-layer viewbox-layer--2" aria-hidden="true" />
         <div className="viewbox-layer viewbox-layer--3" aria-hidden="true" />
         <div className="viewbox-layer viewbox-layer--4">
-          <div className="viewbox-placeholder">
-            <h1>aFLR Viewbox</h1>
-            <p>Waiting for WebSocket updates...</p>
-          </div>
+          <Layer4Layout debugEnabled={debugEnabled} guidesEnabled={guidesEnabled} />
         </div>
         <div className="viewbox-layer viewbox-layer--5" aria-hidden="true" />
         {debugEnabled ? <DebugOverlay /> : null}
