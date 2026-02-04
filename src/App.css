@@ -42,6 +42,13 @@
   z-index: 5;
 }
 
+.layer2__video {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  display: block;
+}
+
 .viewbox-placeholder {
   position: absolute;
   inset: 0;

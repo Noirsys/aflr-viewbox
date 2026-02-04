@@ -92,6 +92,27 @@ function DebugOverlay() {
   )
 }
 
+function Layer2BackgroundVideo() {
+  const { state } = useBroadcast()
+  const videoSrc = state.layer2.backgroundVideoSrc
+  const resolvedSrc = videoSrc ? `/media/layer2/${videoSrc}` : null
+
+  if (!resolvedSrc) {
+    return null
+  }
+
+  return (
+    <video
+      className="layer2__video"
+      src={resolvedSrc}
+      autoPlay
+      loop
+      muted
+      playsInline
+    />
+  )
+}
+
 type Layer4LayoutProps = {
   debugEnabled: boolean
   guidesEnabled: boolean
@@ -162,7 +183,9 @@ function App() {
     <div className="app">
       <div className="viewbox-stage">
         <div className="viewbox-layer viewbox-layer--1" aria-hidden="true" />
-        <div className="viewbox-layer viewbox-layer--2" aria-hidden="true" />
+        <div className="viewbox-layer viewbox-layer--2" aria-hidden="true">
+          <Layer2BackgroundVideo />
+        </div>
         <div className="viewbox-layer viewbox-layer--3" aria-hidden="true" />
         <div className="viewbox-layer viewbox-layer--4">
           <Layer4Layout debugEnabled={debugEnabled} guidesEnabled={guidesEnabled} />

@@ -73,7 +73,7 @@
 
 **- \[x] 110 Layer4: implement pixel-perfect layout boxes from docs/viewbox_spec.md (+ ?guides=1)**
 
-**- \[ ] 120 Layer2 background video: full-frame video under Layer4**
+**- \[x] 120 Layer2 background video: full-frame video under Layer4**
 
 **- \[ ] 130 Layer1 main audio: playback + volume + autoplay-safe behavior**
 
