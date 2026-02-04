@@ -54,6 +54,133 @@
   gap: 12px;
 }
 
+.layer4 {
+  position: absolute;
+  inset: 0;
+  font-family: 'Inter', 'Segoe UI', system-ui, sans-serif;
+  color: #e5e7eb;
+}
+
+.layer4__box {
+  position: absolute;
+  border-radius: 8px;
+  background: rgba(15, 23, 42, 0.35);
+  border: 1px solid rgba(148, 163, 184, 0.25);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 10px 12px;
+  box-sizing: border-box;
+}
+
+.layer4__text {
+  width: 100%;
+  text-align: center;
+  line-height: 1.2;
+}
+
+.layer4__text--title {
+  font-size: 28px;
+  font-weight: 600;
+}
+
+.layer4__text--headline {
+  font-size: 20px;
+  font-weight: 600;
+  display: -webkit-box;
+  -webkit-line-clamp: 2;
+  -webkit-box-orient: vertical;
+  overflow: hidden;
+}
+
+.layer4__text--subtext {
+  font-size: 18px;
+  display: -webkit-box;
+  -webkit-line-clamp: 2;
+  -webkit-box-orient: vertical;
+  overflow: hidden;
+}
+
+.layer4__text--body {
+  font-size: 16px;
+  opacity: 0.85;
+}
+
+.layer4__text--marquee {
+  font-size: 16px;
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+}
+
+.layer4__title {
+  left: 10px;
+  top: 10px;
+  width: 694px;
+  height: 80px;
+}
+
+.layer4__main-content {
+  left: 24px;
+  top: 106px;
+  width: 662px;
+  height: 372px;
+}
+
+.layer4__live-feed {
+  left: 716px;
+  top: 36px;
+  width: 546px;
+  height: 524px;
+}
+
+.layer4__headline {
+  left: 10px;
+  top: 492px;
+  width: 696px;
+  height: 68px;
+}
+
+.layer4__logo {
+  left: 6px;
+  top: 566px;
+  width: 96px;
+  height: 96px;
+}
+
+.layer4__subtext {
+  left: 110px;
+  top: 566px;
+  width: 964px;
+  height: 96px;
+}
+
+.layer4__weather {
+  left: 1078px;
+  top: 566px;
+  width: 202px;
+  height: 98px;
+}
+
+.layer4__clock {
+  left: 1104px;
+  top: 664px;
+  width: 176px;
+  height: 56px;
+}
+
+.layer4__marquee {
+  left: 0;
+  top: 670px;
+  width: 1104px;
+  height: 50px;
+}
+
+.layer4--guides .layer4__box {
+  background: rgba(59, 130, 246, 0.08);
+  border-color: rgba(96, 165, 250, 0.7);
+  box-shadow: inset 0 0 0 1px rgba(96, 165, 250, 0.6);
+}
+
 .viewbox-placeholder h1 {
   font-size: 2.5rem;
   margin: 0;
