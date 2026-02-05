@@ -1,11 +1,14 @@
 #!/usr/bin/env bash
 set -euo pipefail
 
-REPO_DIR="${REPO_DIR:-$HOME/aflr-viewbox}"
+SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
+DEFAULT_REPO_DIR="$(cd "$SCRIPT_DIR/.." && pwd)"
+REPO_DIR="${REPO_DIR:-$DEFAULT_REPO_DIR}"
 REPO_URL="${REPO_URL:-https://github.com/Noirsys/aflr-viewbox.git}"
 BASE_BRANCH="${BASE_BRANCH:-main}"
 CODEX_ENV_ID="${CODEX_ENV_ID:-}"
 OPENAI_MODEL="${OPENAI_MODEL:-}"
+NO_REMOTE="${NO_REMOTE:-0}"
 
 if [[ -z "$CODEX_ENV_ID" ]]; then
   echo "ERROR: CODEX_ENV_ID not set"
@@ -19,20 +22,27 @@ if [[ ! -d "$REPO_DIR/.git" ]]; then
 fi
 
 cd "$REPO_DIR"
-git fetch origin
 git checkout "$BASE_BRANCH"
-git pull --ff-only origin "$BASE_BRANCH"
+if [[ "$NO_REMOTE" != "1" ]]; then
+  if git fetch origin; then
+    git pull --ff-only origin "$BASE_BRANCH"
+  else
+    echo "Warning: git fetch failed (offline?). Continuing without remote updates."
+  fi
+else
+  echo "Skipping git fetch/pull (NO_REMOTE=1)"
+fi
 
 # Parse next unchecked task from IMPLEMENTATION_PLAN.md (allow optional markdown bold **...**)
-NEXT_LINE="$(grep -E '^\*{0,2}- \[ \] [0-9]{3} ' IMPLEMENTATION_PLAN.md | head -n 1 || true)"
+NEXT_LINE="$(grep -E '^[[:space:]]*\*{0,2}- \[ \] [0-9]{3} ' IMPLEMENTATION_PLAN.md | head -n 1 || true)"
 if [[ -z "$NEXT_LINE" ]]; then
   echo '{"done":true,"message":"No unchecked tasks found."}'
   exit 0
 fi
 
-LINE_CLEAN="$(echo "$NEXT_LINE" | sed -E 's/^\*+//; s/\*+$//')"
-TASK_ID="$(echo "$LINE_CLEAN" | sed -E 's/^- \[ \] ([0-9]{3}) .*/\1/')"
-TASK_TEXT="$(echo "$LINE_CLEAN" | sed -E 's/^- \[ \] [0-9]{3} //')"
+LINE_CLEAN="$(echo "$NEXT_LINE" | sed -E 's/^[[:space:]]*\*+//; s/\*+[[:space:]]*$//')"
+TASK_ID="$(echo "$LINE_CLEAN" | sed -E 's/^[[:space:]]*- \[ \] ([0-9]{3}) .*/\1/')"
+TASK_TEXT="$(echo "$LINE_CLEAN" | sed -E 's/^[[:space:]]*- \[ \] [0-9]{3} //')"
 
 # Create slug + branch
 SLUG="$(echo "$TASK_TEXT" | tr '[:upper:]' '[:lower:]' | sed -E 's/[^a-z0-9]+/-/g; s/^-+|-+$//g' | cut -c1-48)"
