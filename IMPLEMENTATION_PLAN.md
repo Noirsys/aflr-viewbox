@@ -77,7 +77,7 @@
 
 **- \[x] 130 Layer1 main audio: playback + volume + autoplay-safe behavior**
 
-**- \[ ] 140 Layer5 overlay: fullscreen video + emergency alert + hideLayer5**
+**- \[x] 140 Layer5 overlay: fullscreen video + emergency alert + hideLayer5**
 
 **- \[ ] 150 Marquee/ticker: scroll system + item parsing + speed**
 

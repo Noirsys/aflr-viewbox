@@ -234,6 +234,92 @@ function Layer1MainAudio() {
   return <audio ref={audioRef} onEnded={handleEnded} />
 }
 
+type Layer5OverlayActiveProps = {
+  visible: boolean
+  videoSrc: string | null
+  alertText: string | null
+  hideAfterMs: number | null
+}
+
+function Layer5OverlayActive({ visible, videoSrc, alertText, hideAfterMs }: Layer5OverlayActiveProps) {
+  const hideTimerRef = useRef<number | null>(null)
+  const [hiddenByClient, setHiddenByClient] = useState(false)
+  const [videoCompleted, setVideoCompleted] = useState(false)
+
+  useEffect(() => {
+    if (hideTimerRef.current !== null) {
+      window.clearTimeout(hideTimerRef.current)
+      hideTimerRef.current = null
+    }
+
+    if (!visible || hideAfterMs === null) {
+      return
+    }
+
+    const safeDelay = Math.max(0, hideAfterMs)
+    hideTimerRef.current = window.setTimeout(() => {
+      setHiddenByClient(true)
+    }, safeDelay)
+
+    return () => {
+      if (hideTimerRef.current !== null) {
+        window.clearTimeout(hideTimerRef.current)
+        hideTimerRef.current = null
+      }
+    }
+  }, [hideAfterMs, visible])
+
+  const showVideo = Boolean(videoSrc) && !videoCompleted
+  const showAlert = Boolean(alertText)
+  const shouldRender = visible && !hiddenByClient && (showVideo || showAlert)
+
+  if (!shouldRender) {
+    return null
+  }
+
+  return (
+    <div className="layer5" role="presentation">
+      {showVideo ? (
+        <video
+          className="layer5__video"
+          src={videoSrc ?? undefined}
+          autoPlay
+          playsInline
+          muted
+          onEnded={() => setVideoCompleted(true)}
+        />
+      ) : null}
+      {showAlert ? (
+        <div className="layer5__alert" role="alert" aria-live="assertive">
+          <div className="layer5__alert-frame">
+            <h2 className="layer5__alert-title">EMERGENCY ALERT</h2>
+            <p className="layer5__alert-copy">{alertText}</p>
+          </div>
+        </div>
+      ) : null}
+    </div>
+  )
+}
+
+function Layer5Overlay() {
+  const { state } = useBroadcast()
+  const alertText = state.layer5.emergencyAlert?.trim() || null
+  const videoSrc = state.layer5.fullscreenVideoSrc
+    ? `/media/layer5/${state.layer5.fullscreenVideoSrc}`
+    : null
+  const resetKey = `${state.layer5.visible ? '1' : '0'}:${videoSrc ?? ''}:${alertText ?? ''}`
+
+  return (
+    <Layer5OverlayActive
+      key={resetKey}
+      visible={state.layer5.visible}
+      videoSrc={videoSrc}
+      alertText={alertText}
+      hideAfterMs={state.layer5.hideAfterMs}
+    />
+  )
+}
+
 type Layer4LayoutProps = {
   debugEnabled: boolean
   guidesEnabled: boolean
@@ -313,7 +399,9 @@ function App() {
         <div className="viewbox-layer viewbox-layer--4">
           <Layer4Layout debugEnabled={debugEnabled} guidesEnabled={guidesEnabled} />
         </div>
-        <div className="viewbox-layer viewbox-layer--5" aria-hidden="true" />
+        <div className="viewbox-layer viewbox-layer--5">
+          <Layer5Overlay />
+        </div>
         {debugEnabled ? <DebugOverlay /> : null}
       </div>
       {debugEnabled ? <DebugPanel /> : null}
