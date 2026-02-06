@@ -79,7 +79,7 @@
 
 **- \[x] 140 Layer5 overlay: fullscreen video + emergency alert + hideLayer5**
 
-**- \[ ] 150 Marquee/ticker: scroll system + item parsing + speed**
+**- \[x] 150 Marquee/ticker: scroll system + item parsing + speed**
 
 **- \[ ] 160 Weather + clock widgets: render within exact bounds**
 

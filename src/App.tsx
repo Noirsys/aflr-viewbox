@@ -1,9 +1,35 @@
 import { useCallback, useEffect, useRef, useState } from 'react'
+import type { CSSProperties } from 'react'
 import './App.css'
 import { useBroadcast } from './broadcast/useBroadcast'
 
 const DEBUG_QUERY = 'debug'
 const GUIDES_QUERY = 'guides'
+const MARQUEE_SCROLL_PX_PER_SECOND = 110
+const MARQUEE_DEFAULT_BACKGROUND = 'rgba(15, 23, 42, 0.72)'
+const MARQUEE_SEPARATOR = ' • '
+
+const isSafeMarqueeFilename = (filename: string) =>
+  /^[A-Za-z0-9._-]+\.txt$/i.test(filename) && !filename.includes('..')
+
+const parseMarqueeItems = (raw: string) =>
+  raw
+    .split(/\r?\n/u)
+    .map((line) => line.trim())
+    .filter((line) => line.length > 0)
+
+const parseMarqueeBackgroundColor = (filename: string | null) => {
+  if (!filename) {
+    return null
+  }
+
+  const colorMatch = filename.match(/([0-9A-Fa-f]{6})\.txt$/u)
+  if (!colorMatch) {
+    return null
+  }
+
+  return `#${colorMatch[1].toUpperCase()}`
+}
 
 function useDebugEnabled() {
   if (typeof window === 'undefined') {
@@ -320,6 +346,188 @@ function Layer5Overlay() {
   )
 }
 
+type Layer4MarqueeProps = {
+  marqueeFile: string | null
+  marqueeRevision: number
+  debugEnabled: boolean
+}
+
+function Layer4Marquee({ marqueeFile, marqueeRevision, debugEnabled }: Layer4MarqueeProps) {
+  const [items, setItems] = useState<string[]>([])
+  const [offsetPx, setOffsetPx] = useState(0)
+  const firstCopyRef = useRef<HTMLSpanElement | null>(null)
+  const loopWidthRef = useRef(0)
+  const animationFrameRef = useRef<number | null>(null)
+  const lastFrameRef = useRef<number | null>(null)
+  const normalizedMarqueeFile = marqueeFile?.trim() || null
+
+  const hasItems = items.length > 0
+  const tickerText = items.join(MARQUEE_SEPARATOR)
+  const loopText = hasItems ? `${tickerText}${MARQUEE_SEPARATOR}` : ''
+  const marqueeBackgroundColor =
+    parseMarqueeBackgroundColor(normalizedMarqueeFile) ?? MARQUEE_DEFAULT_BACKGROUND
+  const marqueeStyle = {
+    '--marquee-background-color': marqueeBackgroundColor,
+  } as CSSProperties
+
+  useEffect(() => {
+    const nextFile = normalizedMarqueeFile ?? ''
+    setOffsetPx(0)
+
+    if (!nextFile) {
+      setItems([])
+      return
+    }
+
+    if (!isSafeMarqueeFilename(nextFile)) {
+      if (debugEnabled) {
+        console.debug('[marquee] Ignored unsafe filename', nextFile)
+      }
+      setItems([])
+      return
+    }
+
+    const controller = new AbortController()
+
+    const loadMarquee = async () => {
+      try {
+        const response = await fetch(`/media/marquee/${encodeURIComponent(nextFile)}`, {
+          signal: controller.signal,
+        })
+        if (!response.ok) {
+          throw new Error(`HTTP ${response.status}`)
+        }
+
+        const text = await response.text()
+        if (controller.signal.aborted) {
+          return
+        }
+
+        setItems(parseMarqueeItems(text))
+      } catch (error) {
+        if (controller.signal.aborted) {
+          return
+        }
+
+        setItems([])
+        if (debugEnabled) {
+          console.debug('[marquee] Failed to load marquee file', {
+            file: nextFile,
+            error,
+          })
+        }
+      }
+    }
+
+    void loadMarquee()
+
+    return () => {
+      controller.abort()
+    }
+  }, [debugEnabled, normalizedMarqueeFile, marqueeRevision])
+
+  useEffect(() => {
+    if (!hasItems) {
+      loopWidthRef.current = 0
+      setOffsetPx(0)
+      return
+    }
+
+    const firstCopy = firstCopyRef.current
+    if (!firstCopy) {
+      return
+    }
+
+    const updateLoopWidth = () => {
+      loopWidthRef.current = firstCopy.offsetWidth
+    }
+
+    updateLoopWidth()
+
+    if (typeof ResizeObserver === 'undefined') {
+      window.addEventListener('resize', updateLoopWidth)
+      return () => {
+        window.removeEventListener('resize', updateLoopWidth)
+      }
+    }
+
+    const observer = new ResizeObserver(() => {
+      updateLoopWidth()
+    })
+    observer.observe(firstCopy)
+
+    return () => {
+      observer.disconnect()
+    }
+  }, [hasItems, loopText])
+
+  useEffect(() => {
+    if (!hasItems) {
+      return
+    }
+
+    const tick = (timestamp: number) => {
+      const lastFrame = lastFrameRef.current ?? timestamp
+      lastFrameRef.current = timestamp
+      const deltaSeconds = (timestamp - lastFrame) / 1000
+      const loopWidth = loopWidthRef.current
+
+      setOffsetPx((currentOffset) => {
+        if (loopWidth <= 0) {
+          return 0
+        }
+
+        let nextOffset = currentOffset - deltaSeconds * MARQUEE_SCROLL_PX_PER_SECOND
+        while (nextOffset <= -loopWidth) {
+          nextOffset += loopWidth
+        }
+
+        return nextOffset
+      })
+
+      animationFrameRef.current = window.requestAnimationFrame(tick)
+    }
+
+    animationFrameRef.current = window.requestAnimationFrame(tick)
+
+    return () => {
+      if (animationFrameRef.current !== null) {
+        window.cancelAnimationFrame(animationFrameRef.current)
+        animationFrameRef.current = null
+      }
+      lastFrameRef.current = null
+    }
+  }, [hasItems])
+
+  if (!hasItems) {
+    return (
+      <section className="layer4__box layer4__marquee" style={marqueeStyle}>
+        <div className="layer4__text layer4__text--marquee">
+          {debugEnabled ? 'Marquee / Ticker' : ''}
+        </div>
+      </section>
+    )
+  }
+
+  return (
+    <section className="layer4__box layer4__marquee" style={marqueeStyle}>
+      <div className="layer4__marquee-viewport" aria-label="Ticker">
+        <div
+          className="layer4__marquee-track"
+          style={{ transform: `translate3d(${offsetPx}px, 0, 0)` }}
+        >
+          <span ref={firstCopyRef} className="layer4__marquee-copy">
+            {loopText}
+          </span>
+          <span className="layer4__marquee-copy" aria-hidden="true">
+            {loopText}
+          </span>
+        </div>
+      </div>
+    </section>
+  )
+}
+
 type Layer4LayoutProps = {
   debugEnabled: boolean
   guidesEnabled: boolean
@@ -373,11 +581,11 @@ function Layer4Layout({ debugEnabled, guidesEnabled }: Layer4LayoutProps) {
           {withPlaceholder(null, 'Time / Clock')}
         </div>
       </section>
-      <section className="layer4__box layer4__marquee">
-        <div className="layer4__text layer4__text--marquee">
-          {withPlaceholder(state.layer4.marqueeFile, 'Marquee / Ticker')}
-        </div>
-      </section>
+      <Layer4Marquee
+        marqueeFile={state.layer4.marqueeFile}
+        marqueeRevision={state.layer4.marqueeRevision}
+        debugEnabled={debugEnabled}
+      />
     </div>
   )
 }

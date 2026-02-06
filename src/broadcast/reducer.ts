@@ -33,6 +33,7 @@ export const initialState: BroadcastState = {
     },
     weather: null,
     marqueeFile: null,
+    marqueeRevision: 0,
   },
   layer5: {
     fullscreenVideoSrc: null,
@@ -94,11 +95,15 @@ const applyStateSync = (state: BroadcastState, payload: StateSyncPayload): Broad
   }
 
   if (payload.layer4) {
+    const hasMarqueeValue = payload.layer4.marquee !== undefined
     nextState.layer4 = {
       ...nextState.layer4,
       headline: payload.layer4.headline ?? nextState.layer4.headline,
       subtext: payload.layer4.subtext ?? nextState.layer4.subtext,
       marqueeFile: payload.layer4.marquee ?? nextState.layer4.marqueeFile,
+      marqueeRevision: hasMarqueeValue
+        ? nextState.layer4.marqueeRevision + 1
+        : nextState.layer4.marqueeRevision,
       weather: coerceWeather(payload.layer4.weather) ?? nextState.layer4.weather,
       mainContent: payload.layer4.mainContent
         ? {
@@ -219,6 +224,7 @@ export const broadcastReducer = (state: BroadcastState, action: BroadcastAction)
             layer4: {
               ...stateWithMeta.layer4,
               marqueeFile: message.data.marqueefile,
+              marqueeRevision: stateWithMeta.layer4.marqueeRevision + 1,
             },
           }
         case 'fullscreenVideo':

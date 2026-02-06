@@ -154,6 +154,7 @@ export interface BroadcastState {
     }
     weather: number | null
     marqueeFile: string | null
+    marqueeRevision: number
   }
   layer5: {
     fullscreenVideoSrc: string | null
