@@ -28,3 +28,6 @@ Build a React+Vite 1280×720 broadcast "viewbox" that is controlled via WebSocke
 6. **Ensure resiliency**: Add debug overlays, message logs, and error handling to aid in long-running uptime scenarios.
 
 Refer to the repository's documentation and scripts for more details on development and testing procedures.
+
+## Session Journal
+- See `JOURNAL.md` for chronological run history, decisions, runtime state, and restart commands for long-running automation.
