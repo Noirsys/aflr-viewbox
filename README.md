@@ -71,3 +71,29 @@ export default defineConfig([
   },
 ])
 ```
+
+## Ralph Automation
+
+A long-running Codex orchestration workflow is available in `scripts/RALPH.md`.
+
+Quick run:
+
+```bash
+DRY_RUN=1 scripts/ralph_once.sh
+```
+
+## PR Auto-Merge
+
+Label-based auto-merge is enabled via `.github/workflows/pr-automerge.yml`.
+
+Arm a PR from CLI:
+
+```bash
+scripts/pr_automerge.sh <pr-number>
+```
+
+Arm all currently open PRs:
+
+```bash
+scripts/pr_automerge.sh --all
+```
