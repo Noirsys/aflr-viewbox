@@ -2,7 +2,12 @@
 set -euo pipefail
 
 SCRIPT_DIR="$(cd -- "$(dirname -- "${BASH_SOURCE[0]}")" && pwd)"
-ONCE_SCRIPT="${ONCE_SCRIPT:-$SCRIPT_DIR/ralph_once.sh}"
+ONCE_SCRIPT_CANDIDATE="${ONCE_SCRIPT:-$SCRIPT_DIR/ralph_once.sh}"
+if [[ "$(basename "$ONCE_SCRIPT_CANDIDATE")" == "ralph_forever.sh" ]]; then
+  ONCE_SCRIPT="$SCRIPT_DIR/ralph_once.sh"
+else
+  ONCE_SCRIPT="$ONCE_SCRIPT_CANDIDATE"
+fi
 MAX_LOOPS="${MAX_LOOPS:-0}"
 SLEEP_SEC="${SLEEP_SEC:-15}"
 FAIL_BACKOFF_SEC="${FAIL_BACKOFF_SEC:-90}"
@@ -35,6 +40,11 @@ while true; do
   if [[ "$rc" -eq 10 ]]; then
     echo "[ralph] all checklist tasks complete"
     exit 0
+  fi
+
+  if [[ "$rc" -eq 42 ]]; then
+    echo "[ralph] stopping due Codex session/environment permission error"
+    exit 42
   fi
 
   if [[ "$rc" -eq 0 ]]; then

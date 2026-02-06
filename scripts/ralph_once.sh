@@ -18,6 +18,8 @@ KEEP_WORKTREES="${KEEP_WORKTREES:-0}"
 WORK_ROOT="${WORK_ROOT:-$REPO_DIR/.ralph/worktrees}"
 LOG_ROOT="${LOG_ROOT:-$REPO_DIR/.ralph/logs}"
 BASE_REF_MODE="${BASE_REF_MODE:-local}"
+DEFAULT_CODEX_HOME="$REPO_DIR/.ralph/codex_home"
+CODEX_HOME_PATH="${CODEX_HOME:-$DEFAULT_CODEX_HOME}"
 
 if ! [[ "$CANDIDATE_COUNT" =~ ^[0-9]+$ ]] || [[ "$CANDIDATE_COUNT" -lt 1 ]]; then
   echo "ERROR: CANDIDATE_COUNT must be >= 1" >&2
@@ -36,8 +38,41 @@ json_escape() {
   printf '%s' "$1" | sed -e 's/\\/\\\\/g' -e 's/"/\\"/g'
 }
 
+codex_log_has_environment_error() {
+  local log_file="$1"
+  grep -E -q \
+    'Fatal error: Codex cannot access session files|failed to initialize rollout recorder: Permission denied|Failed to create session: Permission denied|failed to clean up stale arg0 temp dirs: Permission denied|could not update PATH: Permission denied' \
+    "$log_file"
+}
+
 has_verify_script() {
   node -e "const p=require('./package.json'); process.exit(p.scripts&&p.scripts.verify?0:1)"
+}
+
+prepare_codex_home() {
+  local source_home="$HOME/.codex"
+  local codex_home="$CODEX_HOME_PATH"
+  local file
+
+  mkdir -p \
+    "$codex_home" \
+    "$codex_home/log" \
+    "$codex_home/rules" \
+    "$codex_home/sessions" \
+    "$codex_home/shell_snapshots" \
+    "$codex_home/tmp"
+
+  if [[ "$codex_home" != "$source_home" ]]; then
+    for file in auth.json config.toml models_cache.json version.json; do
+      if [[ ! -f "$codex_home/$file" ]] && [[ -f "$source_home/$file" ]]; then
+        cp "$source_home/$file" "$codex_home/$file" >/dev/null 2>&1 || true
+      fi
+    done
+  fi
+
+  [[ -w "$codex_home" ]] || return 87
+  [[ -w "$codex_home/sessions" ]] || return 87
+  return 0
 }
 
 verify_worktree() {
@@ -66,36 +101,68 @@ run_codex_exec() {
   local wt="$1"
   local prompt_file="$2"
   local out_log="$3"
+  local rc=0
 
   if [[ "$DRY_RUN" == "1" ]]; then
     printf 'dry-run: skipped codex exec for %s\n' "$wt" >"$out_log"
     return 0
   fi
 
-  local cmd=(codex exec --dangerously-bypass-approvals-and-sandbox -C "$wt")
+  if ! prepare_codex_home; then
+    printf 'ERROR: unable to prepare writable CODEX_HOME at %s\n' "$CODEX_HOME_PATH" >"$out_log"
+    return 87
+  fi
+
+  local cmd=(env CODEX_HOME="$CODEX_HOME_PATH" codex exec --dangerously-bypass-approvals-and-sandbox -C "$wt")
   if [[ -n "$CODEX_MODEL" ]]; then
     cmd+=( -m "$CODEX_MODEL" )
   fi
   cmd+=( - )
 
-  timeout "$CODEX_TIMEOUT_SEC" "${cmd[@]}" <"$prompt_file" >"$out_log" 2>&1
+  timeout "$CODEX_TIMEOUT_SEC" "${cmd[@]}" <"$prompt_file" >"$out_log" 2>&1 || rc=$?
+
+  if codex_log_has_environment_error "$out_log"; then
+    return 86
+  fi
+
+  if [[ "$rc" -ne 0 ]]; then
+    return "$rc"
+  fi
+
+  return 0
 }
 
 run_codex_review() {
   local wt="$1"
   local out_log="$2"
+  local rc=0
 
   if [[ "$DRY_RUN" == "1" ]]; then
     printf 'dry-run: skipped codex review for %s\n' "$wt" >"$out_log"
     return 0
   fi
 
-  local cmd=(codex exec review --uncommitted --dangerously-bypass-approvals-and-sandbox)
+  if ! prepare_codex_home; then
+    printf 'ERROR: unable to prepare writable CODEX_HOME at %s\n' "$CODEX_HOME_PATH" >"$out_log"
+    return 87
+  fi
+
+  local cmd=(env CODEX_HOME="$CODEX_HOME_PATH" codex exec review --uncommitted --dangerously-bypass-approvals-and-sandbox)
   if [[ -n "$CODEX_MODEL" ]]; then
     cmd+=( -m "$CODEX_MODEL" )
   fi
 
-  (cd "$wt" && "${cmd[@]}") >"$out_log" 2>&1
+  (cd "$wt" && "${cmd[@]}") >"$out_log" 2>&1 || rc=$?
+
+  if codex_log_has_environment_error "$out_log"; then
+    return 86
+  fi
+
+  if [[ "$rc" -ne 0 ]]; then
+    return "$rc"
+  fi
+
+  return 0
 }
 
 get_next_task_line() {
@@ -226,7 +293,9 @@ done
 for i in $(seq 1 "$CANDIDATE_COUNT"); do
   idx=$((i - 1))
   status=0
-  if ! wait "${candidate_pids[$idx]}"; then
+  if wait "${candidate_pids[$idx]}"; then
+    status=0
+  else
     status=$?
   fi
   candidate_statuses+=("$status")
@@ -237,12 +306,19 @@ winner_index=-1
 winner_branch=""
 winner_worktree=""
 verify_log=""
+codex_env_error_detected=0
 
 for i in $(seq 1 "$CANDIDATE_COUNT"); do
   idx=$((i - 1))
   wt="${candidate_worktrees[$idx]}"
   branch="${candidate_branches[$idx]}"
   out_log="$RUN_LOG_DIR/verify-c${i}.log"
+
+  if [[ "${candidate_statuses[$idx]}" -eq 86 ]] || [[ "${candidate_statuses[$idx]}" -eq 87 ]]; then
+    codex_env_error_detected=1
+    log "Candidate $i rejected: Codex session/environment setup error"
+    continue
+  fi
 
   if [[ "${candidate_statuses[$idx]}" -ne 0 ]]; then
     log "Candidate $i rejected: Codex execution failed"
@@ -269,6 +345,10 @@ done
 
 if [[ "$winner_index" -lt 0 ]]; then
   cleanup_worktrees "${candidate_worktrees[@]}"
+  if [[ "$codex_env_error_detected" -eq 1 ]]; then
+    echo "{\"done\":false,\"task_id\":\"$TASK_ID\",\"error\":\"Codex session/environment permission error detected. Check ~/.codex ownership and permissions.\",\"logs\":\"$RUN_LOG_DIR\"}"
+    exit 42
+  fi
   echo "{\"done\":false,\"task_id\":\"$TASK_ID\",\"error\":\"No candidate produced a verified solution.\",\"logs\":\"$RUN_LOG_DIR\"}"
   exit 4
 fi

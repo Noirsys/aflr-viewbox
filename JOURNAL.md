@@ -4,7 +4,70 @@
 This file is a context handoff log for continuing work after context window resets.
 
 ## Timestamp
-- Last updated: 2026-02-06T13:42:10-05:00
+- Last updated: 2026-02-06T16:49:46-05:00
+
+## Session Update (2026-02-06T16:49:46-05:00)
+1. Hardened Ralph error handling in automation scripts:
+- Fixed candidate exit-status capture bug in `scripts/ralph_once.sh` where non-zero `wait` statuses were being recorded as `0`.
+- Added explicit detection for Codex session/environment permission failures and mapped to terminal codepath.
+- Added terminal stop behavior in `scripts/ralph_forever.sh` for fatal environment errors (`rc=42`) to prevent wasted retry loops.
+
+2. Added sandbox-safe Codex runtime path:
+- `scripts/ralph_once.sh` now prepares and uses repo-local `CODEX_HOME` at `.ralph/codex_home`.
+- Seeds auth/config from `~/.codex` when needed so Codex can run under restricted writable roots.
+
+3. Operational recovery actions:
+- Stopped nested/stale Ralph processes and pushed completed work to `main`.
+- Restarted detached autonomous runner after script hardening.
+- Current autonomous run is active on task `230`.
+
+4. Observed infra constraints:
+- In restricted shell mode, Codex network/session access can fail without elevated execution.
+- Relaunching runner outside sandbox constraints restored Codex candidate execution.
+
+## Session Update (2026-02-06T15:26:11-05:00)
+1. Completed and pushed two additional checklist tasks via Ralph:
+- `51dd899` `feat(150): Marquee/ticker: scroll system + item parsing + speed`
+- `d841bce` `feat(160): Weather + clock widgets: render within exact bounds`
+- Both are now on `main` and `origin/main`.
+
+2. PR cleanup and merge status:
+- PR `#17` was merged.
+- PR `#10` and PR `#14` were closed as superseded/stale.
+- Remote branches for the closed PRs were deleted.
+- There are currently no open PRs.
+
+3. Current repository state:
+- Branch: `main`
+- Status: clean (`main...origin/main`)
+- Next unchecked task: `170 Main content renderer: image/video/audio selection + preload + fallback`
+- No active `ralph_once.sh` / `ralph_forever.sh` / `codex exec` run.
+
+4. Model and reasoning settings used by Ralph runs:
+- Model is sourced from `~/.codex/config.toml`: `gpt-5.3-codex`.
+- Reasoning effort is sourced from `~/.codex/config.toml`: currently `high`.
+- To run at medium effort in next session, set:
+  `model_reasoning_effort = "medium"`
+
+5. Ready-to-start commands for next autonomous run:
+```bash
+cd /home/tt/codex-runs/aflr-viewbox
+```
+
+Single task cycle:
+```bash
+scripts/ralph_once.sh
+```
+
+Detached continuous loop:
+```bash
+setsid -f bash -lc 'cd /home/tt/codex-runs/aflr-viewbox && AUTO_PUSH=1 MAX_CONSECUTIVE_FAILURES=8 CANDIDATE_COUNT=2 CODEX_TIMEOUT_SEC=3600 scripts/ralph_forever.sh >> .ralph/ralph_forever.out 2>&1'
+```
+
+Monitor:
+```bash
+tail -f /home/tt/codex-runs/aflr-viewbox/.ralph/ralph_forever.out
+```
 
 ## Session Update (2026-02-06T13:42:10-05:00)
 1. Investigated failing CI on PR `#17`:
