@@ -1,0 +1,574 @@
+// Vitest Snapshot v1, https://vitest.dev/guide/snapshot.html
+
+exports[`broadcastReducer snapshots (message -> state) > backgroundaudioUpdate explicit null stops layer1 background audio 1`] = `
+{
+  "connection": {
+    "lastError": null,
+    "reconnectAttempt": 0,
+    "status": "disconnected",
+  },
+  "layer1": {
+    "backgroundAudioSrc": null,
+    "mainAudio": {
+      "command": null,
+      "filename": null,
+      "seqlength": null,
+    },
+    "volume": 1,
+  },
+  "layer2": {
+    "backgroundVideoSrc": null,
+  },
+  "layer4": {
+    "headline": "",
+    "mainContent": {
+      "materials": null,
+      "mediaType": null,
+      "revision": 0,
+    },
+    "marqueeFile": null,
+    "marqueeRevision": 0,
+    "subtext": "",
+    "weather": null,
+  },
+  "layer5": {
+    "emergencyAlert": null,
+    "fullscreenVideoSrc": null,
+    "hideAfterMs": null,
+    "visible": false,
+  },
+  "meta": {
+    "lastMessageTimestamp": 1700000000011,
+    "lastMessageType": "backgroundaudioUpdate",
+  },
+}
+`;
+
+exports[`broadcastReducer snapshots (message -> state) > backgroundvideoUpdate stores layer2 video source 1`] = `
+{
+  "connection": {
+    "lastError": null,
+    "reconnectAttempt": 0,
+    "status": "disconnected",
+  },
+  "layer1": {
+    "backgroundAudioSrc": null,
+    "mainAudio": {
+      "command": null,
+      "filename": null,
+      "seqlength": null,
+    },
+    "volume": 1,
+  },
+  "layer2": {
+    "backgroundVideoSrc": "aFLR_LOOP_ScCo.mp4",
+  },
+  "layer4": {
+    "headline": "",
+    "mainContent": {
+      "materials": null,
+      "mediaType": null,
+      "revision": 0,
+    },
+    "marqueeFile": null,
+    "marqueeRevision": 0,
+    "subtext": "",
+    "weather": null,
+  },
+  "layer5": {
+    "emergencyAlert": null,
+    "fullscreenVideoSrc": null,
+    "hideAfterMs": null,
+    "visible": false,
+  },
+  "meta": {
+    "lastMessageTimestamp": 1700000000001,
+    "lastMessageType": "backgroundvideoUpdate",
+  },
+}
+`;
+
+exports[`broadcastReducer snapshots (message -> state) > emergencyAlert sets content and shows layer5 1`] = `
+{
+  "connection": {
+    "lastError": null,
+    "reconnectAttempt": 0,
+    "status": "disconnected",
+  },
+  "layer1": {
+    "backgroundAudioSrc": null,
+    "mainAudio": {
+      "command": null,
+      "filename": null,
+      "seqlength": null,
+    },
+    "volume": 1,
+  },
+  "layer2": {
+    "backgroundVideoSrc": null,
+  },
+  "layer4": {
+    "headline": "",
+    "mainContent": {
+      "materials": null,
+      "mediaType": null,
+      "revision": 0,
+    },
+    "marqueeFile": null,
+    "marqueeRevision": 0,
+    "subtext": "",
+    "weather": null,
+  },
+  "layer5": {
+    "emergencyAlert": "SEVERE WEATHER WARNING: Seek shelter immediately.",
+    "fullscreenVideoSrc": null,
+    "hideAfterMs": null,
+    "visible": true,
+  },
+  "meta": {
+    "lastMessageTimestamp": 1700000000014,
+    "lastMessageType": "emergencyAlert",
+  },
+}
+`;
+
+exports[`broadcastReducer snapshots (message -> state) > fullStoryUpdate updates headline, subtext, and main content together 1`] = `
+{
+  "connection": {
+    "lastError": null,
+    "reconnectAttempt": 0,
+    "status": "disconnected",
+  },
+  "layer1": {
+    "backgroundAudioSrc": null,
+    "mainAudio": {
+      "command": null,
+      "filename": null,
+      "seqlength": null,
+    },
+    "volume": 1,
+  },
+  "layer2": {
+    "backgroundVideoSrc": null,
+  },
+  "layer4": {
+    "headline": "Breaking: Scanner Activity",
+    "mainContent": {
+      "materials": "story1.svg",
+      "mediaType": "image",
+      "revision": 1,
+    },
+    "marqueeFile": null,
+    "marqueeRevision": 0,
+    "subtext": "Multiple units dispatched - Stand by",
+    "weather": null,
+  },
+  "layer5": {
+    "emergencyAlert": null,
+    "fullscreenVideoSrc": null,
+    "hideAfterMs": null,
+    "visible": false,
+  },
+  "meta": {
+    "lastMessageTimestamp": 1700000000006,
+    "lastMessageType": "fullStoryUpdate",
+  },
+}
+`;
+
+exports[`broadcastReducer snapshots (message -> state) > fullscreenVideo shows layer5 and resets hide timer 1`] = `
+{
+  "connection": {
+    "lastError": null,
+    "reconnectAttempt": 0,
+    "status": "disconnected",
+  },
+  "layer1": {
+    "backgroundAudioSrc": null,
+    "mainAudio": {
+      "command": null,
+      "filename": null,
+      "seqlength": null,
+    },
+    "volume": 1,
+  },
+  "layer2": {
+    "backgroundVideoSrc": null,
+  },
+  "layer4": {
+    "headline": "",
+    "mainContent": {
+      "materials": null,
+      "mediaType": null,
+      "revision": 0,
+    },
+    "marqueeFile": null,
+    "marqueeRevision": 0,
+    "subtext": "",
+    "weather": null,
+  },
+  "layer5": {
+    "emergencyAlert": null,
+    "fullscreenVideoSrc": "aFLR_X_Opening.mp4",
+    "hideAfterMs": null,
+    "visible": true,
+  },
+  "meta": {
+    "lastMessageTimestamp": 1700000000009,
+    "lastMessageType": "fullscreenVideo",
+  },
+}
+`;
+
+exports[`broadcastReducer snapshots (message -> state) > headlineUpdate stores layer4 headline 1`] = `
+{
+  "connection": {
+    "lastError": null,
+    "reconnectAttempt": 0,
+    "status": "disconnected",
+  },
+  "layer1": {
+    "backgroundAudioSrc": null,
+    "mainAudio": {
+      "command": null,
+      "filename": null,
+      "seqlength": null,
+    },
+    "volume": 1,
+  },
+  "layer2": {
+    "backgroundVideoSrc": null,
+  },
+  "layer4": {
+    "headline": "Breaking: Structure Fire Reported",
+    "mainContent": {
+      "materials": null,
+      "mediaType": null,
+      "revision": 0,
+    },
+    "marqueeFile": null,
+    "marqueeRevision": 0,
+    "subtext": "",
+    "weather": null,
+  },
+  "layer5": {
+    "emergencyAlert": null,
+    "fullscreenVideoSrc": null,
+    "hideAfterMs": null,
+    "visible": false,
+  },
+  "meta": {
+    "lastMessageTimestamp": 1700000000003,
+    "lastMessageType": "headlineUpdate",
+  },
+}
+`;
+
+exports[`broadcastReducer snapshots (message -> state) > hideLayer5 keeps visibility and sets delay 1`] = `
+{
+  "connection": {
+    "lastError": null,
+    "reconnectAttempt": 0,
+    "status": "disconnected",
+  },
+  "layer1": {
+    "backgroundAudioSrc": null,
+    "mainAudio": {
+      "command": null,
+      "filename": null,
+      "seqlength": null,
+    },
+    "volume": 1,
+  },
+  "layer2": {
+    "backgroundVideoSrc": null,
+  },
+  "layer4": {
+    "headline": "",
+    "mainContent": {
+      "materials": null,
+      "mediaType": null,
+      "revision": 0,
+    },
+    "marqueeFile": null,
+    "marqueeRevision": 0,
+    "subtext": "",
+    "weather": null,
+  },
+  "layer5": {
+    "emergencyAlert": null,
+    "fullscreenVideoSrc": "aFLR_X_Opening.mp4",
+    "hideAfterMs": 1500,
+    "visible": true,
+  },
+  "meta": {
+    "lastMessageTimestamp": 1700000000013,
+    "lastMessageType": "hideLayer5",
+  },
+}
+`;
+
+exports[`broadcastReducer snapshots (message -> state) > mainContentUpdate increments revision and parses legacy string mediatype 1`] = `
+{
+  "connection": {
+    "lastError": null,
+    "reconnectAttempt": 0,
+    "status": "disconnected",
+  },
+  "layer1": {
+    "backgroundAudioSrc": null,
+    "mainAudio": {
+      "command": null,
+      "filename": null,
+      "seqlength": null,
+    },
+    "volume": 1,
+  },
+  "layer2": {
+    "backgroundVideoSrc": null,
+  },
+  "layer4": {
+    "headline": "",
+    "mainContent": {
+      "materials": "clip456.mp4",
+      "mediaType": "video",
+      "revision": 1,
+    },
+    "marqueeFile": null,
+    "marqueeRevision": 0,
+    "subtext": "",
+    "weather": null,
+  },
+  "layer5": {
+    "emergencyAlert": null,
+    "fullscreenVideoSrc": null,
+    "hideAfterMs": null,
+    "visible": false,
+  },
+  "meta": {
+    "lastMessageTimestamp": 1700000000005,
+    "lastMessageType": "mainContentUpdate",
+  },
+}
+`;
+
+exports[`broadcastReducer snapshots (message -> state) > mainaudioUpdate stores command, filename, and sequence length 1`] = `
+{
+  "connection": {
+    "lastError": null,
+    "reconnectAttempt": 0,
+    "status": "disconnected",
+  },
+  "layer1": {
+    "backgroundAudioSrc": null,
+    "mainAudio": {
+      "command": "play_clip_sequence",
+      "filename": "story_7.wav",
+      "seqlength": 3,
+    },
+    "volume": 1,
+  },
+  "layer2": {
+    "backgroundVideoSrc": null,
+  },
+  "layer4": {
+    "headline": "",
+    "mainContent": {
+      "materials": null,
+      "mediaType": null,
+      "revision": 0,
+    },
+    "marqueeFile": null,
+    "marqueeRevision": 0,
+    "subtext": "",
+    "weather": null,
+  },
+  "layer5": {
+    "emergencyAlert": null,
+    "fullscreenVideoSrc": null,
+    "hideAfterMs": null,
+    "visible": false,
+  },
+  "meta": {
+    "lastMessageTimestamp": 1700000000002,
+    "lastMessageType": "mainaudioUpdate",
+  },
+}
+`;
+
+exports[`broadcastReducer snapshots (message -> state) > marqueeUpdate stores marqueefile and increments revision 1`] = `
+{
+  "connection": {
+    "lastError": null,
+    "reconnectAttempt": 0,
+    "status": "disconnected",
+  },
+  "layer1": {
+    "backgroundAudioSrc": null,
+    "mainAudio": {
+      "command": null,
+      "filename": null,
+      "seqlength": null,
+    },
+    "volume": 1,
+  },
+  "layer2": {
+    "backgroundVideoSrc": null,
+  },
+  "layer4": {
+    "headline": "",
+    "mainContent": {
+      "materials": null,
+      "mediaType": null,
+      "revision": 0,
+    },
+    "marqueeFile": "TOP_3366FF.txt",
+    "marqueeRevision": 1,
+    "subtext": "",
+    "weather": null,
+  },
+  "layer5": {
+    "emergencyAlert": null,
+    "fullscreenVideoSrc": null,
+    "hideAfterMs": null,
+    "visible": false,
+  },
+  "meta": {
+    "lastMessageTimestamp": 1700000000008,
+    "lastMessageType": "marqueeUpdate",
+  },
+}
+`;
+
+exports[`broadcastReducer snapshots (message -> state) > stateSync merges payload into active state 1`] = `
+{
+  "connection": {
+    "lastError": null,
+    "reconnectAttempt": 0,
+    "status": "disconnected",
+  },
+  "layer1": {
+    "backgroundAudioSrc": "bed.wav",
+    "mainAudio": {
+      "command": null,
+      "filename": null,
+      "seqlength": null,
+    },
+    "volume": 0.4,
+  },
+  "layer2": {
+    "backgroundVideoSrc": "aFLR_LOOP_ScCo.mp4",
+  },
+  "layer4": {
+    "headline": "State sync headline",
+    "mainContent": {
+      "materials": "story999.svg",
+      "mediaType": "image",
+      "revision": 2,
+    },
+    "marqueeFile": "TOP_3366FF.txt",
+    "marqueeRevision": 2,
+    "subtext": "State sync subtext",
+    "weather": 32,
+  },
+  "layer5": {
+    "emergencyAlert": "SEVERE WEATHER WARNING: Seek shelter immediately.",
+    "fullscreenVideoSrc": "aFLR_X_Opening.mp4",
+    "hideAfterMs": null,
+    "visible": true,
+  },
+  "meta": {
+    "lastMessageTimestamp": 1700000000017,
+    "lastMessageType": "stateSync",
+  },
+}
+`;
+
+exports[`broadcastReducer snapshots (message -> state) > subtextUpdate stores layer4 subtext 1`] = `
+{
+  "connection": {
+    "lastError": null,
+    "reconnectAttempt": 0,
+    "status": "disconnected",
+  },
+  "layer1": {
+    "backgroundAudioSrc": null,
+    "mainAudio": {
+      "command": null,
+      "filename": null,
+      "seqlength": null,
+    },
+    "volume": 1,
+  },
+  "layer2": {
+    "backgroundVideoSrc": null,
+  },
+  "layer4": {
+    "headline": "",
+    "mainContent": {
+      "materials": null,
+      "mediaType": null,
+      "revision": 0,
+    },
+    "marqueeFile": null,
+    "marqueeRevision": 0,
+    "subtext": "Units responding near downtown
+Updates pending",
+    "weather": null,
+  },
+  "layer5": {
+    "emergencyAlert": null,
+    "fullscreenVideoSrc": null,
+    "hideAfterMs": null,
+    "visible": false,
+  },
+  "meta": {
+    "lastMessageTimestamp": 1700000000004,
+    "lastMessageType": "subtextUpdate",
+  },
+}
+`;
+
+exports[`broadcastReducer snapshots (message -> state) > weatherUpdate stores numeric temperature 1`] = `
+{
+  "connection": {
+    "lastError": null,
+    "reconnectAttempt": 0,
+    "status": "disconnected",
+  },
+  "layer1": {
+    "backgroundAudioSrc": null,
+    "mainAudio": {
+      "command": null,
+      "filename": null,
+      "seqlength": null,
+    },
+    "volume": 1,
+  },
+  "layer2": {
+    "backgroundVideoSrc": null,
+  },
+  "layer4": {
+    "headline": "",
+    "mainContent": {
+      "materials": null,
+      "mediaType": null,
+      "revision": 0,
+    },
+    "marqueeFile": null,
+    "marqueeRevision": 0,
+    "subtext": "",
+    "weather": 34,
+  },
+  "layer5": {
+    "emergencyAlert": null,
+    "fullscreenVideoSrc": null,
+    "hideAfterMs": null,
+    "visible": false,
+  },
+  "meta": {
+    "lastMessageTimestamp": 1700000000007,
+    "lastMessageType": "weatherUpdate",
+  },
+}
+`;

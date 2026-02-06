@@ -93,7 +93,7 @@
 
 **- \[x] 210 Add a lightweight local WS relay (optional) for dev (`npm run ws:relay`)**
 
-**- \[ ] 220 Add snapshot tests for reducer (message → state)**
+**- \[x] 220 Add snapshot tests for reducer (message → state)**
 
 **- \[ ] 230 Add basic e2e “smoke” script: start dev server, send WS messages, ensure no crash**
 
