@@ -4,7 +4,21 @@
 This file is a context handoff log for continuing work after context window resets.
 
 ## Timestamp
-- Last updated: 2026-02-06T08:03:39-05:00
+- Last updated: 2026-02-06T13:42:10-05:00
+
+## Session Update (2026-02-06T13:42:10-05:00)
+1. Investigated failing CI on PR `#17`:
+- Failure was `scripts/make-fixtures.sh: ffmpeg: command not found`.
+- Fixtures were already committed under `public/fixtures/*`; the failure came from forced regeneration in `npm run verify`.
+
+2. Fixed fixture generation fallback:
+- Updated `scripts/make-fixtures.sh` to detect missing `ffmpeg`.
+- If all required fixture files already exist, script now exits successfully and uses committed fixtures.
+- If files are missing and `ffmpeg` is missing, script still fails with a clear error.
+
+3. Validation:
+- `npm run verify` passes locally.
+- Explicit no-ffmpeg simulation confirms fallback path works.
 
 ## Session Update (2026-02-06T08:03:39-05:00)
 1. Added PR label-driven auto-merge workflow:

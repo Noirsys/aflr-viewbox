@@ -3,6 +3,31 @@ set -euo pipefail
 
 OUT="public/fixtures"
 mkdir -p "$OUT"
+REQUIRED_FIXTURES=(
+  "$OUT/testsrc_720p_5s.mp4"
+  "$OUT/bars_720p_5s.mp4"
+  "$OUT/tone_440hz_10s.wav"
+)
+
+has_required_fixtures() {
+  local f
+  for f in "${REQUIRED_FIXTURES[@]}"; do
+    if [[ ! -s "$f" ]]; then
+      return 1
+    fi
+  done
+  return 0
+}
+
+if ! command -v ffmpeg >/dev/null 2>&1; then
+  if has_required_fixtures; then
+    echo "ffmpeg not found; using committed fixtures from $OUT/"
+    exit 0
+  fi
+
+  echo "ERROR: ffmpeg not found and required fixtures are missing in $OUT/" >&2
+  exit 127
+fi
 
 # 5s 1280x720 moving test pattern (good for crop/fit testing)
 ffmpeg -hide_banner -y \
