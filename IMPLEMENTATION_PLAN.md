@@ -91,7 +91,7 @@
 
 **- \[x] 200 Ensure `scripts/run-demo-show.ts` works end-to-end against dev WS server**
 
-**- \[ ] 210 Add a lightweight local WS relay (optional) for dev (`npm run ws:relay`)**
+**- \[x] 210 Add a lightweight local WS relay (optional) for dev (`npm run ws:relay`)**
 
 **- \[ ] 220 Add snapshot tests for reducer (message → state)**
 
