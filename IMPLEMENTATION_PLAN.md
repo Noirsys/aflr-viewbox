@@ -95,7 +95,7 @@
 
 **- \[x] 220 Add snapshot tests for reducer (message → state)**
 
-**- \[ ] 230 Add basic e2e “smoke” script: start dev server, send WS messages, ensure no crash**
+**- \[x] 230 Add basic e2e “smoke” script: start dev server, send WS messages, ensure no crash**
 
 
 

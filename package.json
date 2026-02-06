@@ -11,7 +11,8 @@
     "lint": "eslint .",
     "preview": "vite preview",
     "verify": "npm run fixtures && npm run build && npm run test --if-present && npm run lint --if-present",
-    "ws:relay": "node --experimental-strip-types scripts/ws-relay.ts"
+    "ws:relay": "node --experimental-strip-types scripts/ws-relay.ts",
+    "smoke:e2e": "node --experimental-strip-types scripts/smoke-e2e.ts"
   },
   "dependencies": {
     "react": "^19.2.0",
