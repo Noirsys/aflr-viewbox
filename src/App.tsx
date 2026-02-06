@@ -8,6 +8,7 @@ const GUIDES_QUERY = 'guides'
 const MARQUEE_SCROLL_PX_PER_SECOND = 110
 const MARQUEE_DEFAULT_BACKGROUND = 'rgba(15, 23, 42, 0.72)'
 const MARQUEE_SEPARATOR = ' • '
+const WEATHER_ICON_PLACEHOLDER = 'WX'
 
 const isSafeMarqueeFilename = (filename: string) =>
   /^[A-Za-z0-9._-]+\.txt$/i.test(filename) && !filename.includes('..')
@@ -29,6 +30,25 @@ const parseMarqueeBackgroundColor = (filename: string | null) => {
   }
 
   return `#${colorMatch[1].toUpperCase()}`
+}
+
+const formatWeatherTemperature = (temperature: number | null): string | null => {
+  if (temperature === null || !Number.isFinite(temperature)) {
+    return null
+  }
+
+  const rounded = Math.round(temperature * 10) / 10
+  const display = Number.isInteger(rounded) ? String(Math.trunc(rounded)) : rounded.toFixed(1)
+  return `${display}\u00B0F`
+}
+
+const formatLocalClockTime = (value: Date): string => {
+  const hours24 = value.getHours()
+  const hours12 = hours24 % 12 || 12
+  const hours = String(hours12).padStart(2, '0')
+  const minutes = String(value.getMinutes()).padStart(2, '0')
+  const period = hours24 >= 12 ? 'PM' : 'AM'
+  return `${hours}:${minutes} ${period}`
 }
 
 function useDebugEnabled() {
@@ -528,6 +548,52 @@ function Layer4Marquee({ marqueeFile, marqueeRevision, debugEnabled }: Layer4Mar
   )
 }
 
+type Layer4WeatherProps = {
+  temperature: number | null
+  debugEnabled: boolean
+}
+
+function Layer4Weather({ temperature, debugEnabled }: Layer4WeatherProps) {
+  const formattedTemperature = formatWeatherTemperature(temperature)
+  const displayValue = formattedTemperature ?? (debugEnabled ? 'Weather' : '')
+  const readingClassName = formattedTemperature
+    ? 'layer4__weather-reading'
+    : 'layer4__weather-reading layer4__weather-reading--placeholder'
+
+  return (
+    <section className="layer4__box layer4__weather" aria-label="Weather">
+      <div className="layer4__weather-content">
+        <div className="layer4__weather-icon" aria-hidden="true">
+          {WEATHER_ICON_PLACEHOLDER}
+        </div>
+        <div className={readingClassName}>{displayValue}</div>
+      </div>
+    </section>
+  )
+}
+
+function Layer4Clock() {
+  const [now, setNow] = useState(() => new Date())
+
+  useEffect(() => {
+    const intervalId = window.setInterval(() => {
+      setNow(new Date())
+    }, 1000)
+
+    return () => {
+      window.clearInterval(intervalId)
+    }
+  }, [])
+
+  return (
+    <section className="layer4__box layer4__clock" aria-label="Time / Clock">
+      <time className="layer4__clock-time" dateTime={now.toISOString()}>
+        {formatLocalClockTime(now)}
+      </time>
+    </section>
+  )
+}
+
 type Layer4LayoutProps = {
   debugEnabled: boolean
   guidesEnabled: boolean
@@ -571,16 +637,8 @@ function Layer4Layout({ debugEnabled, guidesEnabled }: Layer4LayoutProps) {
           {withPlaceholder(state.layer4.subtext, 'Story Subtext')}
         </div>
       </section>
-      <section className="layer4__box layer4__weather">
-        <div className="layer4__text layer4__text--body">
-          {withPlaceholder(null, 'Weather')}
-        </div>
-      </section>
-      <section className="layer4__box layer4__clock">
-        <div className="layer4__text layer4__text--body">
-          {withPlaceholder(null, 'Time / Clock')}
-        </div>
-      </section>
+      <Layer4Weather temperature={state.layer4.weather} debugEnabled={debugEnabled} />
+      <Layer4Clock />
       <Layer4Marquee
         marqueeFile={state.layer4.marqueeFile}
         marqueeRevision={state.layer4.marqueeRevision}

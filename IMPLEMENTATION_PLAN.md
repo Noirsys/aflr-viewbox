@@ -81,7 +81,7 @@
 
 **- \[x] 150 Marquee/ticker: scroll system + item parsing + speed**
 
-**- \[ ] 160 Weather + clock widgets: render within exact bounds**
+**- \[x] 160 Weather + clock widgets: render within exact bounds**
 
 **- \[ ] 170 Main content renderer: image/video/audio selection + preload + fallback**
 
