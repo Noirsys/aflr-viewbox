@@ -2,12 +2,8 @@
 set -euo pipefail
 
 SCRIPT_DIR="$(cd -- "$(dirname -- "${BASH_SOURCE[0]}")" && pwd)"
-ONCE_SCRIPT_CANDIDATE="${ONCE_SCRIPT:-$SCRIPT_DIR/ralph_once.sh}"
-if [[ "$(basename "$ONCE_SCRIPT_CANDIDATE")" == "ralph_forever.sh" ]]; then
-  ONCE_SCRIPT="$SCRIPT_DIR/ralph_once.sh"
-else
-  ONCE_SCRIPT="$ONCE_SCRIPT_CANDIDATE"
-fi
+# Always run one-shot cycles through ralph_once.sh to avoid accidental recursion.
+ONCE_SCRIPT="$SCRIPT_DIR/ralph_once.sh"
 MAX_LOOPS="${MAX_LOOPS:-0}"
 SLEEP_SEC="${SLEEP_SEC:-15}"
 FAIL_BACKOFF_SEC="${FAIL_BACKOFF_SEC:-90}"
