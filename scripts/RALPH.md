@@ -78,6 +78,23 @@ setsid -f bash -lc 'cd /path/to/repo && AUTO_PUSH=1 scripts/ralph_forever.sh >> 
 MERGE_TO_BASE=0 AUTO_PUSH=1 AUTO_PR=1 AUTO_MERGE_PR=1 scripts/ralph_once.sh
 ```
 
+## Label-Driven Auto-Merge
+
+When a PR has label `automerge`, workflow `.github/workflows/pr-automerge.yml`
+enables GitHub auto-merge (`--squash --auto --delete-branch`).
+
+Arm one PR:
+
+```bash
+scripts/pr_automerge.sh <pr-number>
+```
+
+Arm all open PRs:
+
+```bash
+scripts/pr_automerge.sh --all
+```
+
 ## Notes
 
 - `npm ci` and `npm run verify` are enforced before commit.

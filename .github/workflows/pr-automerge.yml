@@ -1,0 +1,136 @@
+name: PR Auto Merge
+
+on:
+  pull_request_target:
+    types:
+      - opened
+      - reopened
+      - synchronize
+      - labeled
+      - ready_for_review
+  workflow_run:
+    workflows:
+      - CI
+    types:
+      - completed
+
+permissions:
+  contents: write
+  pull-requests: write
+
+jobs:
+  merge-labeled-pr:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Merge labeled PR when checks pass
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          EVENT_NAME: ${{ github.event_name }}
+          PR_NUMBER: ${{ github.event.pull_request.number }}
+          WR_EVENT: ${{ github.event.workflow_run.event }}
+          WR_CONCLUSION: ${{ github.event.workflow_run.conclusion }}
+          WR_HEAD_BRANCH: ${{ github.event.workflow_run.head_branch }}
+        run: |
+          set -euo pipefail
+
+          resolve_candidates() {
+            if [[ "$EVENT_NAME" == "pull_request_target" ]]; then
+              printf '%s\n' "$PR_NUMBER"
+              return
+            fi
+
+            if [[ "$EVENT_NAME" == "workflow_run" ]]; then
+              if [[ "$WR_EVENT" != "pull_request" ]]; then
+                return
+              fi
+              if [[ "$WR_CONCLUSION" != "success" ]]; then
+                return
+              fi
+              gh pr list --state open --head "$WR_HEAD_BRANCH" --json number -q '.[].number'
+              return
+            fi
+          }
+
+          has_automerge_label() {
+            local pr="$1"
+            gh pr view "$pr" --json labels -q '.labels[].name' 2>/dev/null | grep -Fxq "automerge"
+          }
+
+          checks_ready() {
+            local pr="$1"
+            local rollup_json
+            rollup_json="$(gh pr view "$pr" --json statusCheckRollup -q '.statusCheckRollup')"
+
+            if [[ "$(jq 'length' <<<"$rollup_json")" -eq 0 ]]; then
+              return 1
+            fi
+
+            jq -e '
+              all(
+                .[];
+                (
+                  .__typename == "CheckRun" and
+                  .status == "COMPLETED" and
+                  (
+                    .conclusion == "SUCCESS" or
+                    .conclusion == "NEUTRAL" or
+                    .conclusion == "SKIPPED"
+                  )
+                ) or
+                (
+                  .__typename == "StatusContext" and
+                  .state == "SUCCESS"
+                )
+              )
+            ' <<<"$rollup_json" >/dev/null
+          }
+
+          merge_pr() {
+            local pr="$1"
+            local err_file
+            err_file="$(mktemp)"
+
+            if gh pr merge "$pr" --auto --squash --delete-branch 2>"$err_file"; then
+              echo "Enabled native auto-merge for PR #$pr."
+              rm -f "$err_file"
+              return 0
+            fi
+
+            if grep -q "Protected branch rules not configured" "$err_file"; then
+              echo "Native auto-merge unavailable for PR #$pr; attempting direct merge."
+              gh pr merge "$pr" --squash --delete-branch
+              rm -f "$err_file"
+              return 0
+            fi
+
+            echo "Merge step failed for PR #$pr:"
+            cat "$err_file"
+            rm -f "$err_file"
+            return 1
+          }
+
+          mapfile -t candidates < <(resolve_candidates)
+          if [[ "${#candidates[@]}" -eq 0 ]]; then
+            echo "No candidate PRs for this event; skipping."
+            exit 0
+          fi
+
+          for pr in "${candidates[@]}"; do
+            state="$(gh pr view "$pr" --json state,isDraft -q '.state + " " + (.isDraft|tostring)')"
+            if [[ "$state" != "OPEN false" ]]; then
+              echo "PR #$pr is not open + ready; skipping."
+              continue
+            fi
+
+            if ! has_automerge_label "$pr"; then
+              echo "PR #$pr has no automerge label; skipping."
+              continue
+            fi
+
+            if ! checks_ready "$pr"; then
+              echo "PR #$pr checks are not fully green yet; skipping."
+              continue
+            fi
+
+            merge_pr "$pr"
+          done

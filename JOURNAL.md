@@ -4,7 +4,26 @@
 This file is a context handoff log for continuing work after context window resets.
 
 ## Timestamp
-- Last updated: 2026-02-06T07:55:17-05:00
+- Last updated: 2026-02-06T08:03:39-05:00
+
+## Session Update (2026-02-06T08:03:39-05:00)
+1. Added PR label-driven auto-merge workflow:
+- `.github/workflows/pr-automerge.yml`
+- Triggered on `pull_request_target` updates and label changes.
+- Arms GitHub auto-merge when label `automerge` is present.
+
+2. Added CLI helper:
+- `scripts/pr_automerge.sh`
+- Supports one PR target or `--all` open PRs.
+- Ensures label exists, applies label, and enables auto-merge.
+
+3. Updated docs:
+- `README.md` now includes PR auto-merge usage.
+- `scripts/RALPH.md` now includes label-driven auto-merge section.
+4. Applied labels with helper:
+- `scripts/pr_automerge.sh --all` labeled open PRs `#10` and `#14`.
+- Repo currently reports native auto-merge unavailable due missing protected branch rules.
+- Workflow fallback now handles merge after checks when `automerge` label is present.
 
 ## High-Level Outcomes
 1. Confirmed task `140` status and completed it end-to-end in code.
