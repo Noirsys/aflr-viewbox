@@ -1,6 +1,7 @@
-import { useCallback, useEffect, useRef, useState } from 'react'
+import { useCallback, useEffect, useMemo, useRef, useState } from 'react'
 import type { CSSProperties } from 'react'
 import './App.css'
+import type { MainContentMediaType } from './broadcast/types'
 import { useBroadcast } from './broadcast/useBroadcast'
 
 const DEBUG_QUERY = 'debug'
@@ -9,9 +10,17 @@ const MARQUEE_SCROLL_PX_PER_SECOND = 110
 const MARQUEE_DEFAULT_BACKGROUND = 'rgba(15, 23, 42, 0.72)'
 const MARQUEE_SEPARATOR = ' • '
 const WEATHER_ICON_PLACEHOLDER = 'WX'
+const MAIN_CONTENT_PRELOAD_TIMEOUT_MS = 10000
+
+const MAIN_CONTENT_IMAGE_EXTENSIONS = new Set(['png', 'jpg', 'jpeg', 'gif', 'svg', 'webp'])
+const MAIN_CONTENT_VIDEO_EXTENSIONS = new Set(['mp4', 'webm', 'mov', 'm4v'])
+const MAIN_CONTENT_AUDIO_EXTENSIONS = new Set(['mp3', 'wav', 'ogg', 'm4a', 'aac'])
 
 const isSafeMarqueeFilename = (filename: string) =>
   /^[A-Za-z0-9._-]+\.txt$/i.test(filename) && !filename.includes('..')
+
+const isSafeMainContentFilename = (filename: string) =>
+  /^[A-Za-z0-9._-]+$/i.test(filename) && !filename.includes('..')
 
 const parseMarqueeItems = (raw: string) =>
   raw
@@ -49,6 +58,91 @@ const formatLocalClockTime = (value: Date): string => {
   const minutes = String(value.getMinutes()).padStart(2, '0')
   const period = hours24 >= 12 ? 'PM' : 'AM'
   return `${hours}:${minutes} ${period}`
+}
+
+type MainContentKind = 'image' | 'video' | 'audio'
+
+type MainContentSource = {
+  key: string
+  filename: string
+  kind: MainContentKind
+  src: string
+}
+
+type MainContentSelectionReason = 'empty' | 'unsafe' | 'unsupported'
+
+type MainContentSelection = {
+  source: MainContentSource | null
+  reason: MainContentSelectionReason | null
+}
+
+const getFileExtension = (filename: string): string | null => {
+  const dotIndex = filename.lastIndexOf('.')
+  if (dotIndex <= 0 || dotIndex === filename.length - 1) {
+    return null
+  }
+
+  return filename.slice(dotIndex + 1).toLowerCase()
+}
+
+const inferMainContentKind = (filename: string): MainContentKind | null => {
+  const extension = getFileExtension(filename)
+  if (!extension) {
+    return null
+  }
+
+  if (MAIN_CONTENT_IMAGE_EXTENSIONS.has(extension)) {
+    return 'image'
+  }
+
+  if (MAIN_CONTENT_VIDEO_EXTENSIONS.has(extension)) {
+    return 'video'
+  }
+
+  if (MAIN_CONTENT_AUDIO_EXTENSIONS.has(extension)) {
+    return 'audio'
+  }
+
+  return null
+}
+
+const selectMainContentSource = (
+  mediaType: MainContentMediaType | null,
+  materials: string | null,
+): MainContentSelection => {
+  const filename = materials?.trim() ?? ''
+  if (filename.length === 0) {
+    return { source: null, reason: 'empty' }
+  }
+
+  if (!isSafeMainContentFilename(filename)) {
+    return { source: null, reason: 'unsafe' }
+  }
+
+  const inferredKind = inferMainContentKind(filename)
+
+  let kind: MainContentKind | null = null
+  if (inferredKind === 'audio') {
+    kind = 'audio'
+  } else if (mediaType === 'image' || mediaType === 'video') {
+    kind = mediaType
+  } else {
+    kind = inferredKind
+  }
+
+  if (!kind) {
+    return { source: null, reason: 'unsupported' }
+  }
+
+  return {
+    source: {
+      key: `${kind}:${filename}`,
+      filename,
+      kind,
+      src: `/media/content/${encodeURIComponent(filename)}`,
+    },
+    reason: null,
+  }
 }
 
 function useDebugEnabled() {
@@ -572,6 +666,238 @@ function Layer4Weather({ temperature, debugEnabled }: Layer4WeatherProps) {
   )
 }
 
+type Layer4MainContentProps = {
+  mediaType: MainContentMediaType | null
+  materials: string | null
+  revision: number
+  debugEnabled: boolean
+}
+
+function Layer4MainContent({ mediaType, materials, revision, debugEnabled }: Layer4MainContentProps) {
+  const selection = useMemo(
+    () => selectMainContentSource(mediaType, materials),
+    [mediaType, materials],
+  )
+  const [displayedSource, setDisplayedSource] = useState<MainContentSource | null>(null)
+  const [preloadError, setPreloadError] = useState<{ key: string; message: string } | null>(null)
+
+  useEffect(() => {
+    if (selection.reason === 'unsafe' && materials && debugEnabled) {
+      console.debug('[main-content] Ignored unsafe filename', materials)
+    }
+  }, [debugEnabled, materials, selection.reason])
+
+  useEffect(() => {
+    const source = selection.source
+
+    if (!source) {
+      return
+    }
+
+    let cancelled = false
+    let timeoutId: number | null = null
+
+    const onReady = () => {
+      if (cancelled) {
+        return
+      }
+
+      setDisplayedSource(source)
+      setPreloadError(null)
+    }
+
+    const onFailure = (errorMessage: string, error?: unknown) => {
+      if (cancelled) {
+        return
+      }
+
+      setDisplayedSource(null)
+      setPreloadError({
+        key: source.key,
+        message: errorMessage,
+      })
+      if (debugEnabled) {
+        console.debug('[main-content] Failed to preload media', {
+          filename: source.filename,
+          kind: source.kind,
+          error,
+        })
+      }
+    }
+
+    timeoutId = window.setTimeout(() => {
+      onFailure('Main content unavailable (load timeout)')
+    }, MAIN_CONTENT_PRELOAD_TIMEOUT_MS)
+
+    if (source.kind === 'image') {
+      const image = new Image()
+
+      image.onload = () => {
+        if (timeoutId !== null) {
+          window.clearTimeout(timeoutId)
+          timeoutId = null
+        }
+        image.onload = null
+        image.onerror = null
+        onReady()
+      }
+
+      image.onerror = (error) => {
+        if (timeoutId !== null) {
+          window.clearTimeout(timeoutId)
+          timeoutId = null
+        }
+        image.onload = null
+        image.onerror = null
+        onFailure('Main content unavailable (image failed to load)', error)
+      }
+
+      image.src = source.src
+
+      return () => {
+        cancelled = true
+        if (timeoutId !== null) {
+          window.clearTimeout(timeoutId)
+          timeoutId = null
+        }
+        image.onload = null
+        image.onerror = null
+      }
+    }
+
+    const preloadMedia = document.createElement(source.kind === 'audio' ? 'audio' : 'video')
+    preloadMedia.preload = 'auto'
+    if (source.kind === 'video') {
+      preloadMedia.muted = true
+      ;(preloadMedia as HTMLVideoElement).playsInline = true
+    }
+
+    const handleLoadedData = () => {
+      if (timeoutId !== null) {
+        window.clearTimeout(timeoutId)
+        timeoutId = null
+      }
+      cleanup()
+      onReady()
+    }
+
+    const handleMediaError = (error: Event) => {
+      if (timeoutId !== null) {
+        window.clearTimeout(timeoutId)
+        timeoutId = null
+      }
+      cleanup()
+      onFailure('Main content unavailable (media failed to load)', error)
+    }
+
+    const cleanup = () => {
+      preloadMedia.removeEventListener('loadeddata', handleLoadedData)
+      preloadMedia.removeEventListener('error', handleMediaError)
+      preloadMedia.removeAttribute('src')
+      preloadMedia.load()
+    }
+
+    preloadMedia.addEventListener('loadeddata', handleLoadedData)
+    preloadMedia.addEventListener('error', handleMediaError)
+    preloadMedia.src = source.src
+    preloadMedia.load()
+
+    return () => {
+      cancelled = true
+      if (timeoutId !== null) {
+        window.clearTimeout(timeoutId)
+        timeoutId = null
+      }
+      cleanup()
+    }
+  }, [debugEnabled, revision, selection.source])
+
+  const handleRuntimeError = useCallback((source: MainContentSource) => {
+    setDisplayedSource(null)
+    setPreloadError({
+      key: source.key,
+      message: 'Main content unavailable (playback error)',
+    })
+  }, [])
+
+  const activeSource =
+    selection.source !== null
+      ? displayedSource
+      : selection.reason === 'unsafe'
+        ? displayedSource
+        : null
+  const activeLoadError = selection.source
+    ? preloadError?.key === selection.source.key
+      ? preloadError.message
+      : null
+    : selection.reason === 'empty' || selection.reason === 'unsafe'
+      ? null
+      : 'Main content unavailable'
+  const isLoading =
+    Boolean(selection.source) &&
+    activeSource?.key !== selection.source?.key &&
+    !activeLoadError
+  const fallbackText = activeLoadError
+    ? activeLoadError
+    : isLoading
+      ? debugEnabled
+        ? 'Loading main content...'
+        : ''
+      : debugEnabled
+        ? 'Main Content'
+        : ''
+
+  return (
+    <section className="layer4__box layer4__main-content">
+      {activeSource?.kind === 'image' ? (
+        <img
+          key={activeSource.key}
+          className="layer4__main-content-media layer4__main-content-media--image"
+          src={activeSource.src}
+          alt=""
+          onError={() => handleRuntimeError(activeSource)}
+        />
+      ) : null}
+      {activeSource?.kind === 'video' ? (
+        <video
+          key={activeSource.key}
+          className="layer4__main-content-media layer4__main-content-media--video"
+          src={activeSource.src}
+          autoPlay
+          loop
+          muted
+          playsInline
+          onError={() => handleRuntimeError(activeSource)}
+        />
+      ) : null}
+      {activeSource?.kind === 'audio' ? (
+        <div className="layer4__main-content-audio">
+          <div className="layer4__main-content-audio-label">Audio Story</div>
+          <div className="layer4__main-content-audio-file">{activeSource.filename}</div>
+          <audio
+            key={activeSource.key}
+            className="layer4__main-content-audio-player"
+            src={activeSource.src}
+            controls
+            autoPlay
+            preload="auto"
+            onError={() => handleRuntimeError(activeSource)}
+          />
+        </div>
+      ) : null}
+      {!activeSource && fallbackText ? (
+        <div
+          className={`layer4__main-content-fallback ${
+            activeLoadError ? 'layer4__main-content-fallback--error' : ''
+          }`}
+        >
+          {fallbackText}
+        </div>
+      ) : null}
+    </section>
+  )
+}
+
 function Layer4Clock() {
   const [now, setNow] = useState(() => new Date())
 
@@ -612,11 +938,12 @@ function Layer4Layout({ debugEnabled, guidesEnabled }: Layer4LayoutProps) {
           {withPlaceholder(null, 'Newscast Title')}
         </div>
       </section>
-      <section className="layer4__box layer4__main-content">
-        <div className="layer4__text layer4__text--body">
-          {withPlaceholder(null, 'Main Content')}
-        </div>
-      </section>
+      <Layer4MainContent
+        mediaType={state.layer4.mainContent.mediaType}
+        materials={state.layer4.mainContent.materials}
+        revision={state.layer4.mainContent.revision}
+        debugEnabled={debugEnabled}
+      />
       <section className="layer4__box layer4__live-feed">
         <div className="layer4__text layer4__text--body">
           {withPlaceholder(null, 'Live Feed / Stream')}

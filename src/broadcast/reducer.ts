@@ -30,6 +30,7 @@ export const initialState: BroadcastState = {
     mainContent: {
       mediaType: null,
       materials: null,
+      revision: 0,
     },
     weather: null,
     marqueeFile: null,
@@ -109,6 +110,7 @@ const applyStateSync = (state: BroadcastState, payload: StateSyncPayload): Broad
         ? {
             mediaType: nextState.layer4.mainContent.mediaType as MainContentMediaType | null,
             materials: payload.layer4.mainContent,
+            revision: nextState.layer4.mainContent.revision + 1,
           }
         : nextState.layer4.mainContent,
     }
@@ -194,6 +196,7 @@ export const broadcastReducer = (state: BroadcastState, action: BroadcastAction)
               mainContent: {
                 mediaType: message.data.mediatype,
                 materials: message.data.materials,
+                revision: stateWithMeta.layer4.mainContent.revision + 1,
               },
             },
           }
@@ -207,6 +210,7 @@ export const broadcastReducer = (state: BroadcastState, action: BroadcastAction)
               mainContent: {
                 mediaType: message.data.mediatype,
                 materials: message.data.materials,
+                revision: stateWithMeta.layer4.mainContent.revision + 1,
               },
             },
           }

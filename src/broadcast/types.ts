@@ -151,6 +151,7 @@ export interface BroadcastState {
     mainContent: {
       mediaType: MainContentMediaType | null
       materials: string | null
+      revision: number
     }
     weather: number | null
     marqueeFile: string | null
