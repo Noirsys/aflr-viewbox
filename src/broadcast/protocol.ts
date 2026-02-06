@@ -19,6 +19,26 @@ import type {
   WeatherUpdateMessage,
 } from './types'
 
+export type MessageIgnoredReason =
+  | 'invalid_json'
+  | 'non_object'
+  | 'missing_fields'
+  | 'unknown_type'
+  | 'invalid_payload'
+
+export type MessageParseTelemetryEvent =
+  | {
+      outcome: 'parsed'
+      messageType: BroadcastMessageType
+      timestamp: number
+    }
+  | {
+      outcome: 'ignored'
+      reason: MessageIgnoredReason
+      messageType: string | null
+      timestamp: number | null
+    }
+
 const knownMessageTypes: BroadcastMessageType[] = [
   'backgroundvideoUpdate',
   'backgroundaudioUpdate',
@@ -139,7 +159,11 @@ const parseStateSync = (data: Record<string, unknown>): StateSyncPayload => {
   return payload
 }
 
-export const parseIncomingMessage = (raw: string, debugEnabled: boolean): BroadcastMessage | null => {
+export const parseIncomingMessage = (
+  raw: string,
+  debugEnabled: boolean,
+  telemetryHook?: (event: MessageParseTelemetryEvent) => void,
+): BroadcastMessage | null => {
   let parsed: unknown
   try {
     parsed = JSON.parse(raw)
@@ -147,6 +171,12 @@ export const parseIncomingMessage = (raw: string, debugEnabled: boolean): Broadc
     if (debugEnabled) {
       console.debug('[ws] Failed to parse JSON', error)
     }
+    telemetryHook?.({
+      outcome: 'ignored',
+      reason: 'invalid_json',
+      messageType: null,
+      timestamp: null,
+    })
     return null
   }
 
@@ -154,6 +184,12 @@ export const parseIncomingMessage = (raw: string, debugEnabled: boolean): Broadc
     if (debugEnabled) {
       console.debug('[ws] Message is not an object')
     }
+    telemetryHook?.({
+      outcome: 'ignored',
+      reason: 'non_object',
+      messageType: null,
+      timestamp: null,
+    })
     return null
   }
 
@@ -165,6 +201,12 @@ export const parseIncomingMessage = (raw: string, debugEnabled: boolean): Broadc
     if (debugEnabled) {
       console.debug('[ws] Message missing required fields', parsed)
     }
+    telemetryHook?.({
+      outcome: 'ignored',
+      reason: 'missing_fields',
+      messageType: type,
+      timestamp,
+    })
     return null
   }
 
@@ -172,36 +214,64 @@ export const parseIncomingMessage = (raw: string, debugEnabled: boolean): Broadc
     if (debugEnabled) {
       console.debug('[ws] Unknown message type', type)
     }
+    telemetryHook?.({
+      outcome: 'ignored',
+      reason: 'unknown_type',
+      messageType: type,
+      timestamp,
+    })
     return null
+  }
+
+  const rejectPayload = () => {
+    if (debugEnabled) {
+      console.debug('[ws] Invalid payload for message type', type, data)
+    }
+    telemetryHook?.({
+      outcome: 'ignored',
+      reason: 'invalid_payload',
+      messageType: type,
+      timestamp,
+    })
+    return null
+  }
+
+  const accept = (message: BroadcastMessage) => {
+    telemetryHook?.({
+      outcome: 'parsed',
+      messageType: message.type,
+      timestamp: message.timestamp,
+    })
+    return message
   }
 
   switch (type) {
     case 'backgroundvideoUpdate': {
       const videoSrc = readNonEmptyString(data.videoSrc)
-      if (!videoSrc) return null
+      if (!videoSrc) return rejectPayload()
       const message: BackgroundVideoUpdateMessage = {
         type,
         timestamp,
         data: { videoSrc },
       }
-      return message
+      return accept(message)
     }
     case 'backgroundaudioUpdate': {
-      if (!('audioSrc' in data)) return null
+      if (!('audioSrc' in data)) return rejectPayload()
 
       const audioSrc =
         data.audioSrc === null ? null : readNonEmptyString(data.audioSrc)
-      if (audioSrc === null && data.audioSrc !== null) return null
+      if (audioSrc === null && data.audioSrc !== null) return rejectPayload()
       const message: BackgroundAudioUpdateMessage = {
         type,
         timestamp,
         data: { audioSrc },
       }
-      return message
+      return accept(message)
     }
     case 'mainaudioUpdate': {
       const command = readString(data.command)
-      if (!command || !isMainAudioCommand(command)) return null
+      if (!command || !isMainAudioCommand(command)) return rejectPayload()
 
       const filename = readString(data.filename)
       const seqlength = readNumber(data.seqlength)
@@ -215,101 +285,103 @@ export const parseIncomingMessage = (raw: string, debugEnabled: boolean): Broadc
           seqlength: seqlength ?? null,
         },
       }
-      return message
+      return accept(message)
     }
     case 'headlineUpdate': {
       const headline = readString(data.headline)
-      if (headline === null) return null
+      if (headline === null) return rejectPayload()
       const message: HeadlineUpdateMessage = {
         type,
         timestamp,
         data: { headline },
       }
-      return message
+      return accept(message)
     }
     case 'subtextUpdate': {
       const subtext = readString(data.subtext)
-      if (subtext === null) return null
+      if (subtext === null) return rejectPayload()
       const message: SubtextUpdateMessage = {
         type,
         timestamp,
         data: { subtext },
       }
-      return message
+      return accept(message)
     }
     case 'mainContentUpdate': {
       const mediatype = parseMediaType(data.mediatype)
       const materials = readString(data.materials)
-      if (!mediatype || materials === null) return null
+      if (!mediatype || materials === null) return rejectPayload()
       const message: MainContentUpdateMessage = {
         type,
         timestamp,
         data: { mediatype, materials },
       }
-      return message
+      return accept(message)
     }
     case 'fullStoryUpdate': {
       const headline = readString(data.headline)
       const subtext = readString(data.subtext)
       const mediatype = parseMediaType(data.mediatype)
       const materials = readString(data.materials)
-      if (headline === null || subtext === null || !mediatype || materials === null) return null
+      if (headline === null || subtext === null || !mediatype || materials === null) {
+        return rejectPayload()
+      }
       const message: FullStoryUpdateMessage = {
         type,
         timestamp,
         data: { headline, subtext, mediatype, materials },
       }
-      return message
+      return accept(message)
     }
     case 'weatherUpdate': {
       const temperature = readNumber(data.temperature)
-      if (temperature === null) return null
+      if (temperature === null) return rejectPayload()
       const message: WeatherUpdateMessage = {
         type,
         timestamp,
         data: { temperature },
       }
-      return message
+      return accept(message)
     }
     case 'marqueeUpdate': {
       const marqueefile = readString(data.marqueefile)
-      if (marqueefile === null) return null
+      if (marqueefile === null) return rejectPayload()
       const message: MarqueeUpdateMessage = {
         type,
         timestamp,
         data: { marqueefile },
       }
-      return message
+      return accept(message)
     }
     case 'fullscreenVideo': {
       const videoSrc = readNonEmptyString(data.videoSrc)
-      if (!videoSrc) return null
+      if (!videoSrc) return rejectPayload()
       const message: FullscreenVideoMessage = {
         type,
         timestamp,
         data: { videoSrc },
       }
-      return message
+      return accept(message)
     }
     case 'hideLayer5': {
       const stalltime = readNumber(data.stalltime)
-      if (stalltime === null) return null
+      if (stalltime === null) return rejectPayload()
       const message: HideLayer5Message = {
         type,
         timestamp,
         data: { stalltime },
       }
-      return message
+      return accept(message)
     }
     case 'emergencyAlert': {
       const alertcontent = readString(data.alertcontent)
-      if (alertcontent === null) return null
+      if (alertcontent === null) return rejectPayload()
       const message: EmergencyAlertMessage = {
         type,
         timestamp,
         data: { alertcontent },
       }
-      return message
+      return accept(message)
     }
     case 'stateSync': {
       const payload = parseStateSync(data)
@@ -318,7 +390,7 @@ export const parseIncomingMessage = (raw: string, debugEnabled: boolean): Broadc
         timestamp,
         data: payload,
       }
-      return message
+      return accept(message)
     }
     default:
       return null

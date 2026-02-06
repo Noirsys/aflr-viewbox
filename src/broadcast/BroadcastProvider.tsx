@@ -3,6 +3,8 @@ import type { ReactNode } from 'react'
 import { broadcastReducer, initialState } from './reducer'
 import type { BroadcastMessage, BroadcastState } from './types'
 import { parseIncomingMessage } from './protocol'
+import type { MessageParseTelemetryEvent } from './protocol'
+import { createTelemetryReporter, normalizeTelemetryEndpoint } from './telemetry'
 import { BroadcastContext } from './context'
 
 const WS_URL = import.meta.env.VITE_WS_URL || 'ws://localhost:8088'
@@ -24,8 +26,56 @@ export function BroadcastProvider({ children }: { children: ReactNode }) {
     return new URLSearchParams(window.location.search).get('debug') === '1'
   }, [])
 
+  const telemetryEndpoint = useMemo(() => {
+    const configuredEndpoint =
+      typeof window === 'undefined'
+        ? import.meta.env.VITE_TELEMETRY_ENDPOINT
+        : new URLSearchParams(window.location.search).get('telemetryEndpoint') ??
+          import.meta.env.VITE_TELEMETRY_ENDPOINT
+
+    return normalizeTelemetryEndpoint(configuredEndpoint)
+  }, [])
+
+  const telemetry = useMemo(
+    () =>
+      createTelemetryReporter({
+        consoleEnabled: debugEnabled,
+        endpoint: telemetryEndpoint,
+      }),
+    [debugEnabled, telemetryEndpoint],
+  )
+
   useEffect(() => {
     let isActive = true
+    const describeError = (error: unknown) =>
+      error instanceof Error ? error.message : String(error)
+
+    const handleParseTelemetry = (event: MessageParseTelemetryEvent) => {
+      if (event.outcome === 'parsed') {
+        telemetry('ws_message_parsed', {
+          messageType: event.messageType,
+          messageTimestamp: event.timestamp,
+        })
+        return
+      }
+
+      telemetry(
+        'ws_message_ignored',
+        {
+          reason: event.reason,
+          messageType: event.messageType,
+          messageTimestamp: event.timestamp,
+        },
+        event.reason === 'unknown_type' || event.reason === 'invalid_payload'
+          ? 'warn'
+          : 'debug',
+      )
+    }
+
+    telemetry('ws_provider_started', {
+      wsUrl: WS_URL,
+      endpoint: telemetryEndpoint,
+    })
 
     const updateStatus = (status: BroadcastState['connection']['status'], error?: string | null) => {
       dispatch({
@@ -34,6 +84,15 @@ export function BroadcastProvider({ children }: { children: ReactNode }) {
         error: error ?? null,
         reconnectAttempt: reconnectAttemptRef.current,
       })
+      telemetry(
+        'ws_connection_status',
+        {
+          status,
+          reconnectAttempt: reconnectAttemptRef.current,
+          error: error ?? null,
+        },
+        error ? 'warn' : 'debug',
+      )
     }
 
     const clearReconnectTimer = () => {
@@ -59,11 +118,19 @@ export function BroadcastProvider({ children }: { children: ReactNode }) {
 
       const messages = messageQueueRef.current
       messageQueueRef.current = []
+      telemetry('ws_message_batch_flushed', {
+        count: messages.length,
+        messageTypes: messages.map((message) => message.type),
+      })
       dispatch({ type: 'messageBatch', messages })
     }
 
     const queueMessage = (message: BroadcastMessage) => {
       messageQueueRef.current.push(message)
+      telemetry('ws_message_queued', {
+        messageType: message.type,
+        queueSize: messageQueueRef.current.length,
+      })
       if (flushTimeoutRef.current !== null) {
         return
       }
@@ -83,6 +150,15 @@ export function BroadcastProvider({ children }: { children: ReactNode }) {
         connect()
       }, delay)
 
+      telemetry(
+        'ws_reconnect_scheduled',
+        {
+          delayMs: delay,
+          reconnectAttempt: reconnectAttemptRef.current,
+        },
+        'warn',
+      )
+
       if (debugEnabled) {
         console.debug(`[ws] Reconnecting in ${delay}ms (attempt ${reconnectAttemptRef.current})`)
       }
@@ -92,6 +168,10 @@ export function BroadcastProvider({ children }: { children: ReactNode }) {
       if (!isActive) return
 
       updateStatus('connecting')
+      telemetry('ws_connecting', {
+        wsUrl: WS_URL,
+        reconnectAttempt: reconnectAttemptRef.current,
+      })
       const socket = new WebSocket(WS_URL)
       socketRef.current = socket
 
@@ -108,10 +188,18 @@ export function BroadcastProvider({ children }: { children: ReactNode }) {
 
         try {
           socket.send(JSON.stringify(payload))
+          telemetry('ws_request_state_sent')
           if (debugEnabled) {
             console.debug('[ws] Sent requestState')
           }
         } catch (error) {
+          telemetry(
+            'ws_request_state_failed',
+            {
+              error: describeError(error),
+            },
+            'warn',
+          )
           if (debugEnabled) {
             console.debug('[ws] Failed to send requestState', error)
           }
@@ -121,6 +209,7 @@ export function BroadcastProvider({ children }: { children: ReactNode }) {
       socket.addEventListener('open', () => {
         reconnectAttemptRef.current = 0
         updateStatus('connected')
+        telemetry('ws_connected')
         if (debugEnabled) {
           console.debug('[ws] Connected')
         }
@@ -129,19 +218,40 @@ export function BroadcastProvider({ children }: { children: ReactNode }) {
 
       socket.addEventListener('message', (event) => {
         if (typeof event.data !== 'string') {
+          telemetry(
+            'ws_message_ignored',
+            {
+              reason: 'non_string_socket_message',
+              dataType: typeof event.data,
+            },
+            'debug',
+          )
           return
         }
-        const message = parseIncomingMessage(event.data, debugEnabled)
+        telemetry('ws_message_received', {
+          bytes: event.data.length,
+        })
+        const message = parseIncomingMessage(event.data, debugEnabled, handleParseTelemetry)
         if (message) {
           queueMessage(message)
         }
       })
 
       socket.addEventListener('error', () => {
+        telemetry('ws_error', undefined, 'warn')
         updateStatus('disconnected', 'WebSocket error')
       })
 
-      socket.addEventListener('close', () => {
+      socket.addEventListener('close', (event) => {
+        telemetry(
+          'ws_disconnected',
+          {
+            code: event.code,
+            reason: event.reason,
+            wasClean: event.wasClean,
+          },
+          'warn',
+        )
         if (debugEnabled) {
           console.debug('[ws] Disconnected')
         }
@@ -158,8 +268,9 @@ export function BroadcastProvider({ children }: { children: ReactNode }) {
       messageQueueRef.current = []
       socketRef.current?.close()
       socketRef.current = null
+      telemetry('ws_provider_stopped')
     }
-  }, [debugEnabled])
+  }, [debugEnabled, telemetry, telemetryEndpoint])
 
   return (
     <BroadcastContext.Provider value={{ state, dispatch }}>

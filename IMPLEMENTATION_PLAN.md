@@ -105,4 +105,4 @@
 
 **- \[x] 310 Rate-limit / debounce rapid WS updates to prevent render thrash**
 
-**- \[ ] 320 Add telemetry hooks (console / optional endpoint) for agent debugging**
+**- \[x] 320 Add telemetry hooks (console / optional endpoint) for agent debugging**
