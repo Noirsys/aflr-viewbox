@@ -71,3 +71,13 @@ export default defineConfig([
   },
 ])
 ```
+
+## Ralph Automation
+
+A long-running Codex orchestration workflow is available in `scripts/RALPH.md`.
+
+Quick run:
+
+```bash
+DRY_RUN=1 scripts/ralph_once.sh
+```
