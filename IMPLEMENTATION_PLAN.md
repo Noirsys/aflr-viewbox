@@ -89,7 +89,7 @@
 
 **### Demo + Tooling**
 
-**- \[ ] 200 Ensure `scripts/run-demo-show.ts` works end-to-end against dev WS server**
+**- \[x] 200 Ensure `scripts/run-demo-show.ts` works end-to-end against dev WS server**
 
 **- \[ ] 210 Add a lightweight local WS relay (optional) for dev (`npm run ws:relay`)**
 

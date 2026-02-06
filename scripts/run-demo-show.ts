@@ -10,8 +10,7 @@
  * emergency alert overlay, and a clean sign-off.
  *
  * Usage:
- *   pnpm add -D ws tsx
- *   pnpm tsx scripts/run-demo-show.ts --seed
+ *   node --experimental-strip-types scripts/run-demo-show.ts --seed
  *
  * Options:
  *   --ws    ws://localhost:8088    (override WS URL)
@@ -24,7 +23,6 @@
  *   FAST           set to '1' to enable fast mode
  */
 
-import WebSocket from "ws";
 import fs from "node:fs/promises";
 import path from "node:path";
 import { fileURLToPath } from "node:url";
@@ -38,7 +36,12 @@ type WsEnvelope = {
 // Determine project root relative to this file
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
-const repoRoot = path.resolve(__dirname, "..", "..");
+const repoRoot = path.resolve(__dirname, "..");
+const WebSocketCtor = globalThis.WebSocket;
+
+if (!WebSocketCtor) {
+  throw new Error("WebSocket is not available in this Node runtime (requires Node 22+).");
+}
 
 // Parse CLI arguments
 const argv = process.argv.slice(2);
@@ -52,6 +55,7 @@ const hasFlag = (name: string): boolean => argv.includes(name);
 const wsUrl =
   getArg("--ws") ||
   process.env.WS_URL ||
+  process.env.VITE_WS_URL ||
   "ws://localhost:8088";
 
 const seed =
@@ -260,52 +264,74 @@ async function runDemo(): Promise<void> {
   }
 
   console.log(`🎛️  Demo show connecting to WS: ${wsUrl}`);
-  const ws = new WebSocket(wsUrl);
+  const ws = new WebSocketCtor(wsUrl);
+
+  const waitForOpen = async (): Promise<void> =>
+    new Promise<void>((resolve, reject) => {
+      const timeoutMs = 7000;
+      const timer = setTimeout(() => {
+        reject(new Error(`Timed out connecting to ${wsUrl} after ${timeoutMs}ms`));
+      }, timeoutMs);
+
+      const onOpen = () => {
+        clearTimeout(timer);
+        ws.removeEventListener("error", onError);
+        resolve();
+      };
+
+      const onError = (event: Event) => {
+        clearTimeout(timer);
+        ws.removeEventListener("open", onOpen);
+        reject(new Error(`WebSocket connection error: ${event.type}`));
+      };
+
+      ws.addEventListener("open", onOpen, { once: true });
+      ws.addEventListener("error", onError, { once: true });
+    });
 
   // Helper: send a typed message via WS
-  const send = async (type: string, data: Record<string, unknown>): Promise<void> => {
+  const send = (type: string, data: Record<string, unknown>): void => {
     const msg = makeMsg(type, data);
     const raw = JSON.stringify(msg);
-    await new Promise<void>((resolve, reject) => {
-      ws.send(raw, (err) => (err ? reject(err) : resolve()));
-    });
+    if (ws.readyState !== WebSocketCtor.OPEN) {
+      throw new Error(`WebSocket is not open (readyState=${ws.readyState})`);
+    }
+    ws.send(raw);
     console.log(`→ sent ${type}`, data);
   };
 
   // Wait for socket open
-  await new Promise<void>((resolve, reject) => {
-    ws.on("open", () => resolve());
-    ws.on("error", (e) => reject(e));
-  });
+  await waitForOpen();
 
   // If the relay echoes messages, log them for visibility
-  ws.on("message", (data) => {
-    console.log(`← recv ${(data.toString() as string).slice(0, 200)}...`);
+  ws.addEventListener("message", (event: MessageEvent) => {
+    const body = typeof event.data === "string" ? event.data : String(event.data);
+    console.log(`← recv ${body.slice(0, 200)}...`);
   });
 
   // === Begin show sequence ===
 
   // 0) Baseline: temperature and ticker
-  await send("weatherUpdate", { temperature: 34 });
-  await send("marqueeUpdate", { marqueefile: "DEMO_TOP_3366FF.txt" });
+  send("weatherUpdate", { temperature: 34 });
+  send("marqueeUpdate", { marqueefile: "DEMO_TOP_3366FF.txt" });
 
   // Optional: ambient bed
-  await send("backgroundaudioUpdate", { audioSrc: "demo_bed.wav" });
+  send("backgroundaudioUpdate", { audioSrc: "demo_bed.wav" });
 
   // 1) Open: station ID / headline
-  await send("headlineUpdate", { headline: "ASHTABULA FRONTLINE REPORT" });
-  await send("subtextUpdate", { subtext: "AUTONOMOUS LOCAL NEWS • LIVE DEMO SEQUENCE" });
+  send("headlineUpdate", { headline: "ASHTABULA FRONTLINE REPORT" });
+  send("subtextUpdate", { subtext: "AUTONOMOUS LOCAL NEWS • LIVE DEMO SEQUENCE" });
   await sleep(1200);
 
   // 2) Story 1: Breaking scanner activity
-  await send("fullStoryUpdate", {
+  send("fullStoryUpdate", {
     headline: "BREAKING: Scanner Activity",
     subtext: "Multiple units dispatched • Stand by",
     mediatype: 1,
     materials: "demo_story1.svg",
   });
   await sleep(300);
-  await send("mainaudioUpdate", {
+  send("mainaudioUpdate", {
     command: "play_clip",
     filename: "demo_story1.wav",
     seqlength: 1,
@@ -313,14 +339,14 @@ async function runDemo(): Promise<void> {
   await sleep(4200);
 
   // 3) Story 2: Traffic
-  await send("fullStoryUpdate", {
+  send("fullStoryUpdate", {
     headline: "TRAFFIC: Slowdowns Reported",
     subtext: "Route 11 congestion near downtown",
     mediatype: 1,
     materials: "demo_story2.svg",
   });
   await sleep(300);
-  await send("mainaudioUpdate", {
+  send("mainaudioUpdate", {
     command: "play_clip",
     filename: "demo_story2.wav",
     seqlength: 1,
@@ -328,27 +354,27 @@ async function runDemo(): Promise<void> {
   await sleep(4200);
 
   // 4) Update ticker to alert mode
-  await send("marqueeUpdate", { marqueefile: "DEMO_ALERT_FF0000.txt" });
+  send("marqueeUpdate", { marqueefile: "DEMO_ALERT_FF0000.txt" });
   await sleep(800);
 
   // 5) Emergency alert overlay
-  await send("emergencyAlert", {
+  send("emergencyAlert", {
     alertcontent: "SEVERE WEATHER WARNING: Seek shelter immediately if instructed by authorities.",
   });
   await sleep(2200);
   // Hide overlay after short delay
-  await send("hideLayer5", { stalltime: 900 });
+  send("hideLayer5", { stalltime: 900 });
   await sleep(1200);
 
   // 6) Story 3: Courts
-  await send("fullStoryUpdate", {
+  send("fullStoryUpdate", {
     headline: "COURTS: Daily Schedule",
     subtext: "Arraignments begin 9:00 AM",
     mediatype: 1,
     materials: "demo_story3.svg",
   });
   await sleep(300);
-  await send("mainaudioUpdate", {
+  send("mainaudioUpdate", {
     command: "play_clip",
     filename: "demo_story3.wav",
     seqlength: 1,
@@ -356,11 +382,11 @@ async function runDemo(): Promise<void> {
   await sleep(4200);
 
   // 7) Wrap up the demo
-  await send("headlineUpdate", { headline: "END OF DEMO" });
-  await send("subtextUpdate", { subtext: "If you saw smooth updates, the protocol contract is working ✅" });
+  send("headlineUpdate", { headline: "END OF DEMO" });
+  send("subtextUpdate", { subtext: "If you saw smooth updates, the protocol contract is working ✅" });
   await sleep(1200);
-  await send("mainaudioUpdate", { command: "stop", filename: null, seqlength: 1 });
-  await send("backgroundaudioUpdate", { audioSrc: null });
+  send("mainaudioUpdate", { command: "stop", filename: null, seqlength: 1 });
+  send("backgroundaudioUpdate", { audioSrc: null });
 
   console.log("✅ Demo show complete. Closing WS.");
   ws.close();
