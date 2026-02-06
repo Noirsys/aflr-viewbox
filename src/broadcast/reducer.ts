@@ -129,6 +129,132 @@ const applyStateSync = (state: BroadcastState, payload: StateSyncPayload): Broad
 }
 
 export const broadcastReducer = (state: BroadcastState, action: BroadcastAction): BroadcastState => {
+  const applyMessage = (currentState: BroadcastState, message: BroadcastMessage): BroadcastState => {
+    const stateWithMeta = withMeta(currentState, message)
+
+    switch (message.type) {
+      case 'backgroundvideoUpdate':
+        return {
+          ...stateWithMeta,
+          layer2: {
+            ...stateWithMeta.layer2,
+            backgroundVideoSrc: message.data.videoSrc,
+          },
+        }
+      case 'backgroundaudioUpdate':
+        return {
+          ...stateWithMeta,
+          layer1: {
+            ...stateWithMeta.layer1,
+            backgroundAudioSrc: message.data.audioSrc,
+          },
+        }
+      case 'mainaudioUpdate':
+        return {
+          ...stateWithMeta,
+          layer1: {
+            ...stateWithMeta.layer1,
+            mainAudio: {
+              command: message.data.command,
+              filename: message.data.filename,
+              seqlength: message.data.seqlength,
+            },
+          },
+        }
+      case 'headlineUpdate':
+        return {
+          ...stateWithMeta,
+          layer4: {
+            ...stateWithMeta.layer4,
+            headline: message.data.headline,
+          },
+        }
+      case 'subtextUpdate':
+        return {
+          ...stateWithMeta,
+          layer4: {
+            ...stateWithMeta.layer4,
+            subtext: message.data.subtext,
+          },
+        }
+      case 'mainContentUpdate':
+        return {
+          ...stateWithMeta,
+          layer4: {
+            ...stateWithMeta.layer4,
+            mainContent: {
+              mediaType: message.data.mediatype,
+              materials: message.data.materials,
+              revision: stateWithMeta.layer4.mainContent.revision + 1,
+            },
+          },
+        }
+      case 'fullStoryUpdate':
+        return {
+          ...stateWithMeta,
+          layer4: {
+            ...stateWithMeta.layer4,
+            headline: message.data.headline,
+            subtext: message.data.subtext,
+            mainContent: {
+              mediaType: message.data.mediatype,
+              materials: message.data.materials,
+              revision: stateWithMeta.layer4.mainContent.revision + 1,
+            },
+          },
+        }
+      case 'weatherUpdate':
+        return {
+          ...stateWithMeta,
+          layer4: {
+            ...stateWithMeta.layer4,
+            weather: message.data.temperature,
+          },
+        }
+      case 'marqueeUpdate':
+        return {
+          ...stateWithMeta,
+          layer4: {
+            ...stateWithMeta.layer4,
+            marqueeFile: message.data.marqueefile,
+            marqueeRevision: stateWithMeta.layer4.marqueeRevision + 1,
+          },
+        }
+      case 'fullscreenVideo':
+        return {
+          ...stateWithMeta,
+          layer5: {
+            ...stateWithMeta.layer5,
+            fullscreenVideoSrc: message.data.videoSrc,
+            visible: true,
+            hideAfterMs: null,
+          },
+        }
+      case 'hideLayer5':
+        return {
+          ...stateWithMeta,
+          layer5: {
+            ...stateWithMeta.layer5,
+            hideAfterMs: message.data.stalltime,
+            visible: stateWithMeta.layer5.visible,
+          },
+        }
+      case 'emergencyAlert':
+        return {
+          ...stateWithMeta,
+          layer5: {
+            ...stateWithMeta.layer5,
+            emergencyAlert: message.data.alertcontent,
+            visible: true,
+          },
+        }
+      case 'stateSync':
+        return withMeta(applyStateSync(stateWithMeta, message.data), message)
+      default:
+        return stateWithMeta
+    }
+  }
+
   switch (action.type) {
     case 'connectionStatus':
       return {
@@ -139,132 +265,13 @@ export const broadcastReducer = (state: BroadcastState, action: BroadcastAction)
           lastError: action.error ?? null,
         },
       }
-    case 'message': {
-      const message = action.message
-      const stateWithMeta = withMeta(state, message)
-
-      switch (message.type) {
-        case 'backgroundvideoUpdate':
-          return {
-            ...stateWithMeta,
-            layer2: {
-              ...stateWithMeta.layer2,
-              backgroundVideoSrc: message.data.videoSrc,
-            },
-          }
-        case 'backgroundaudioUpdate':
-          return {
-            ...stateWithMeta,
-            layer1: {
-              ...stateWithMeta.layer1,
-              backgroundAudioSrc: message.data.audioSrc,
-            },
-          }
-        case 'mainaudioUpdate':
-          return {
-            ...stateWithMeta,
-            layer1: {
-              ...stateWithMeta.layer1,
-              mainAudio: {
-                command: message.data.command,
-                filename: message.data.filename,
-                seqlength: message.data.seqlength,
-              },
-            },
-          }
-        case 'headlineUpdate':
-          return {
-            ...stateWithMeta,
-            layer4: {
-              ...stateWithMeta.layer4,
-              headline: message.data.headline,
-            },
-          }
-        case 'subtextUpdate':
-          return {
-            ...stateWithMeta,
-            layer4: {
-              ...stateWithMeta.layer4,
-              subtext: message.data.subtext,
-            },
-          }
-        case 'mainContentUpdate':
-          return {
-            ...stateWithMeta,
-            layer4: {
-              ...stateWithMeta.layer4,
-              mainContent: {
-                mediaType: message.data.mediatype,
-                materials: message.data.materials,
-                revision: stateWithMeta.layer4.mainContent.revision + 1,
-              },
-            },
-          }
-        case 'fullStoryUpdate':
-          return {
-            ...stateWithMeta,
-            layer4: {
-              ...stateWithMeta.layer4,
-              headline: message.data.headline,
-              subtext: message.data.subtext,
-              mainContent: {
-                mediaType: message.data.mediatype,
-                materials: message.data.materials,
-                revision: stateWithMeta.layer4.mainContent.revision + 1,
-              },
-            },
-          }
-        case 'weatherUpdate':
-          return {
-            ...stateWithMeta,
-            layer4: {
-              ...stateWithMeta.layer4,
-              weather: message.data.temperature,
-            },
-          }
-        case 'marqueeUpdate':
-          return {
-            ...stateWithMeta,
-            layer4: {
-              ...stateWithMeta.layer4,
-              marqueeFile: message.data.marqueefile,
-              marqueeRevision: stateWithMeta.layer4.marqueeRevision + 1,
-            },
-          }
-        case 'fullscreenVideo':
-          return {
-            ...stateWithMeta,
-            layer5: {
-              ...stateWithMeta.layer5,
-              fullscreenVideoSrc: message.data.videoSrc,
-              visible: true,
-              hideAfterMs: null,
-            },
-          }
-        case 'hideLayer5':
-          return {
-            ...stateWithMeta,
-            layer5: {
-              ...stateWithMeta.layer5,
-              hideAfterMs: message.data.stalltime,
-              visible: stateWithMeta.layer5.visible,
-            },
-          }
-        case 'emergencyAlert':
-          return {
-            ...stateWithMeta,
-            layer5: {
-              ...stateWithMeta.layer5,
-              emergencyAlert: message.data.alertcontent,
-              visible: true,
-            },
-          }
-        case 'stateSync':
-          return withMeta(applyStateSync(stateWithMeta, message.data), message)
-        default:
-          return stateWithMeta
+    case 'message':
+      return applyMessage(state, action.message)
+    case 'messageBatch':
+      if (action.messages.length === 0) {
+        return state
       }
-    }
+      return action.messages.reduce(applyMessage, state)
     default:
       return state
   }

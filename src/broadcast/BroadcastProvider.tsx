@@ -1,17 +1,20 @@
 import { useEffect, useMemo, useReducer, useRef } from 'react'
 import type { ReactNode } from 'react'
 import { broadcastReducer, initialState } from './reducer'
-import type { BroadcastState } from './types'
+import type { BroadcastMessage, BroadcastState } from './types'
 import { parseIncomingMessage } from './protocol'
 import { BroadcastContext } from './context'
 
 const WS_URL = import.meta.env.VITE_WS_URL || 'ws://localhost:8088'
+const MESSAGE_BATCH_WINDOW_MS = 16
 
 export function BroadcastProvider({ children }: { children: ReactNode }) {
   const [state, dispatch] = useReducer(broadcastReducer, initialState)
   const reconnectAttemptRef = useRef(0)
   const reconnectTimeoutRef = useRef<number | null>(null)
+  const flushTimeoutRef = useRef<number | null>(null)
   const socketRef = useRef<WebSocket | null>(null)
+  const messageQueueRef = useRef<BroadcastMessage[]>([])
 
   const debugEnabled = useMemo(() => {
     if (typeof window === 'undefined') {
@@ -38,6 +41,34 @@ export function BroadcastProvider({ children }: { children: ReactNode }) {
         window.clearTimeout(reconnectTimeoutRef.current)
         reconnectTimeoutRef.current = null
       }
+    }
+
+    const clearFlushTimer = () => {
+      if (flushTimeoutRef.current !== null) {
+        window.clearTimeout(flushTimeoutRef.current)
+        flushTimeoutRef.current = null
+      }
+    }
+
+    const flushQueuedMessages = () => {
+      clearFlushTimer()
+
+      if (!isActive || messageQueueRef.current.length === 0) {
+        return
+      }
+
+      const messages = messageQueueRef.current
+      messageQueueRef.current = []
+      dispatch({ type: 'messageBatch', messages })
+    }
+
+    const queueMessage = (message: BroadcastMessage) => {
+      messageQueueRef.current.push(message)
+      if (flushTimeoutRef.current !== null) {
+        return
+      }
+
+      flushTimeoutRef.current = window.setTimeout(flushQueuedMessages, MESSAGE_BATCH_WINDOW_MS)
     }
 
     const scheduleReconnect = () => {
@@ -102,7 +133,7 @@ export function BroadcastProvider({ children }: { children: ReactNode }) {
         }
         const message = parseIncomingMessage(event.data, debugEnabled)
         if (message) {
-          dispatch({ type: 'message', message })
+          queueMessage(message)
         }
       })
 
@@ -123,6 +154,8 @@ export function BroadcastProvider({ children }: { children: ReactNode }) {
     return () => {
       isActive = false
       clearReconnectTimer()
+      clearFlushTimer()
+      messageQueueRef.current = []
       socketRef.current?.close()
       socketRef.current = null
     }

@@ -30,6 +30,12 @@ const reduceEnvelope = (state: BroadcastState, envelope: Envelope): BroadcastSta
     message: parseEnvelope(envelope),
   })
 
+const reduceEnvelopeBatch = (state: BroadcastState, envelopes: Envelope[]): BroadcastState =>
+  broadcastReducer(state, {
+    type: 'messageBatch',
+    messages: envelopes.map(parseEnvelope),
+  })
+
 const withMessage = (envelope: Envelope) => reduceEnvelope(initialState, envelope)
 
 describe('broadcastReducer snapshots (message -> state)', () => {
@@ -196,4 +202,42 @@ describe('broadcastReducer snapshots (message -> state)', () => {
       expect(nextState).toMatchSnapshot()
     })
   }
+})
+
+describe('broadcastReducer messageBatch', () => {
+  it('applies queued messages in order with one reducer action', () => {
+    const envelopes: Envelope[] = [
+      {
+        type: 'headlineUpdate',
+        timestamp: 1700000001001,
+        data: { headline: 'Batch headline' },
+      },
+      {
+        type: 'subtextUpdate',
+        timestamp: 1700000001002,
+        data: { subtext: 'Batch subtext' },
+      },
+      {
+        type: 'weatherUpdate',
+        timestamp: 1700000001003,
+        data: { temperature: 41 },
+      },
+    ]
+
+    const sequential = envelopes.reduce(reduceEnvelope, initialState)
+    const batched = reduceEnvelopeBatch(initialState, envelopes)
+
+    expect(batched).toEqual(sequential)
+    expect(batched.meta.lastMessageType).toBe('weatherUpdate')
+    expect(batched.meta.lastMessageTimestamp).toBe(1700000001003)
+  })
+
+  it('treats empty batches as a no-op', () => {
+    const unchanged = broadcastReducer(initialState, {
+      type: 'messageBatch',
+      messages: [],
+    })
+
+    expect(unchanged).toBe(initialState)
+  })
 })

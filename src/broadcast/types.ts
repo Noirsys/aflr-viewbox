@@ -180,6 +180,10 @@ export type BroadcastAction =
       type: 'message'
       message: BroadcastMessage
     }
+  | {
+      type: 'messageBatch'
+      messages: BroadcastMessage[]
+    }
 
 export interface BroadcastContextValue {
   state: BroadcastState
