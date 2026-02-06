@@ -101,7 +101,7 @@
 
 **### Hardening**
 
-**- \[ ] 300 Graceful handling for missing media files (fallback UI, warnings)**
+**- \[x] 300 Graceful handling for missing media files (fallback UI, warnings)**
 
 **- \[ ] 310 Rate-limit / debounce rapid WS updates to prevent render thrash**
 

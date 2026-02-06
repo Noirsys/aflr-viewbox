@@ -1,5 +1,5 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react'
-import type { CSSProperties } from 'react'
+import type { CSSProperties, SyntheticEvent } from 'react'
 import './App.css'
 import type { MainContentMediaType } from './broadcast/types'
 import { useBroadcast } from './broadcast/useBroadcast'
@@ -15,6 +15,18 @@ const MAIN_CONTENT_PRELOAD_TIMEOUT_MS = 10000
 const MAIN_CONTENT_IMAGE_EXTENSIONS = new Set(['png', 'jpg', 'jpeg', 'gif', 'svg', 'webp'])
 const MAIN_CONTENT_VIDEO_EXTENSIONS = new Set(['mp4', 'webm', 'mov', 'm4v'])
 const MAIN_CONTENT_AUDIO_EXTENSIONS = new Set(['mp3', 'wav', 'ogg', 'm4a', 'aac'])
+
+type MediaWarningDetails = {
+  filename?: string | null
+  src?: string | null
+  layer: string
+  message: string
+  error?: unknown
+}
+
+const warnMediaIssue = (details: MediaWarningDetails) => {
+  console.warn('[media] Failed to load media', details)
+}
 
 const isSafeMarqueeFilename = (filename: string) =>
   /^[A-Za-z0-9._-]+\.txt$/i.test(filename) && !filename.includes('..')
@@ -242,15 +254,48 @@ function Layer2BackgroundVideo() {
     return null
   }
 
+  return <Layer2BackgroundVideoSource key={resolvedSrc} resolvedSrc={resolvedSrc} videoSrc={videoSrc!} />
+}
+
+type Layer2BackgroundVideoSourceProps = {
+  resolvedSrc: string
+  videoSrc: string
+}
+
+function Layer2BackgroundVideoSource({ resolvedSrc, videoSrc }: Layer2BackgroundVideoSourceProps) {
+  const [hasLoadError, setHasLoadError] = useState(false)
+
+  useEffect(() => {
+    if (!hasLoadError) {
+      return
+    }
+
+    warnMediaIssue({
+      filename: videoSrc,
+      src: resolvedSrc,
+      layer: 'layer2',
+      message: 'Background video unavailable',
+    })
+  }, [hasLoadError, resolvedSrc, videoSrc])
+
   return (
-    <video
-      className="layer2__video"
-      src={resolvedSrc}
-      autoPlay
-      loop
-      muted
-      playsInline
-    />
+    <>
+      {!hasLoadError ? (
+        <video
+          className="layer2__video"
+          src={resolvedSrc}
+          autoPlay
+          loop
+          muted
+          playsInline
+          onError={() => setHasLoadError(true)}
+        />
+      ) : (
+        <div className="layer2__fallback" role="status" aria-live="polite">
+          Background video unavailable
+        </div>
+      )}
+    </>
   )
 }
 
@@ -371,7 +416,39 @@ function Layer1MainAudio() {
     }
   }
 
-  return <audio ref={audioRef} onEnded={handleEnded} />
+  const handleAudioError = useCallback((errorEvent: SyntheticEvent<HTMLAudioElement>) => {
+    const queue = queueRef.current
+    const failedIndex = queueIndexRef.current
+    const failedFile = queue[failedIndex] ?? filename
+    const resolvedSrc = failedFile ? `/media/audio/${failedFile}` : null
+
+    warnMediaIssue({
+      filename: failedFile ?? null,
+      src: resolvedSrc,
+      layer: 'layer1-main-audio',
+      message: 'Primary audio unavailable',
+      error: errorEvent.nativeEvent,
+    })
+
+    if (failedIndex + 1 < queue.length) {
+      queueIndexRef.current = failedIndex + 1
+      playFromQueue()
+      return
+    }
+
+    queueRef.current = []
+    queueIndexRef.current = 0
+    const audio = audioRef.current
+    if (!audio) {
+      return
+    }
+
+    audio.pause()
+    audio.removeAttribute('src')
+    audio.load()
+  }, [filename, playFromQueue])
+
+  return <audio ref={audioRef} onEnded={handleEnded} onError={handleAudioError} />
 }
 
 type Layer5OverlayActiveProps = {
@@ -385,6 +462,20 @@ function Layer5OverlayActive({ visible, videoSrc, alertText, hideAfterMs }: Laye
   const hideTimerRef = useRef<number | null>(null)
   const [hiddenByClient, setHiddenByClient] = useState(false)
   const [videoCompleted, setVideoCompleted] = useState(false)
+  const [videoFailed, setVideoFailed] = useState(false)
+
+  useEffect(() => {
+    if (!videoFailed || !videoSrc) {
+      return
+    }
+
+    warnMediaIssue({
+      filename: videoSrc.split('/').pop() ?? null,
+      src: videoSrc,
+      layer: 'layer5',
+      message: 'Fullscreen video unavailable',
+    })
+  }, [videoFailed, videoSrc])
 
   useEffect(() => {
     if (hideTimerRef.current !== null) {
@@ -409,9 +500,10 @@ function Layer5OverlayActive({ visible, videoSrc, alertText, hideAfterMs }: Laye
     }
   }, [hideAfterMs, visible])
 
-  const showVideo = Boolean(videoSrc) && !videoCompleted
+  const showVideo = Boolean(videoSrc) && !videoCompleted && !videoFailed
+  const showVideoFallback = Boolean(videoSrc) && videoFailed
   const showAlert = Boolean(alertText)
-  const shouldRender = visible && !hiddenByClient && (showVideo || showAlert)
+  const shouldRender = visible && !hiddenByClient && (showVideo || showAlert || showVideoFallback)
 
   if (!shouldRender) {
     return null
@@ -427,7 +519,13 @@ function Layer5OverlayActive({ visible, videoSrc, alertText, hideAfterMs }: Laye
           playsInline
           muted
           onEnded={() => setVideoCompleted(true)}
+          onError={() => setVideoFailed(true)}
         />
+      ) : null}
+      {showVideoFallback ? (
+        <div className="layer5__video-fallback" role="status" aria-live="polite">
+          Fullscreen video unavailable
+        </div>
       ) : null}
       {showAlert ? (
         <div className="layer5__alert" role="alert" aria-live="assertive">
@@ -468,6 +566,7 @@ type Layer4MarqueeProps = {
 
 function Layer4Marquee({ marqueeFile, marqueeRevision, debugEnabled }: Layer4MarqueeProps) {
   const [items, setItems] = useState<string[]>([])
+  const [loadError, setLoadError] = useState(false)
   const [offsetPx, setOffsetPx] = useState(0)
   const firstCopyRef = useRef<HTMLSpanElement | null>(null)
   const loopWidthRef = useRef(0)
@@ -490,6 +589,7 @@ function Layer4Marquee({ marqueeFile, marqueeRevision, debugEnabled }: Layer4Mar
 
     if (!nextFile) {
       setItems([])
+      setLoadError(false)
       return
     }
 
@@ -498,6 +598,7 @@ function Layer4Marquee({ marqueeFile, marqueeRevision, debugEnabled }: Layer4Mar
         console.debug('[marquee] Ignored unsafe filename', nextFile)
       }
       setItems([])
+      setLoadError(false)
       return
     }
 
@@ -518,18 +619,21 @@ function Layer4Marquee({ marqueeFile, marqueeRevision, debugEnabled }: Layer4Mar
         }
 
         setItems(parseMarqueeItems(text))
+        setLoadError(false)
       } catch (error) {
         if (controller.signal.aborted) {
           return
         }
 
         setItems([])
-        if (debugEnabled) {
-          console.debug('[marquee] Failed to load marquee file', {
-            file: nextFile,
-            error,
-          })
-        }
+        setLoadError(true)
+        warnMediaIssue({
+          filename: nextFile,
+          src: `/media/marquee/${encodeURIComponent(nextFile)}`,
+          layer: 'layer4-marquee',
+          message: 'Ticker file unavailable',
+          error,
+        })
       }
     }
 
@@ -614,10 +718,14 @@ function Layer4Marquee({ marqueeFile, marqueeRevision, debugEnabled }: Layer4Mar
   }, [hasItems])
 
   if (!hasItems) {
+    const fallbackText = loadError ? 'Ticker unavailable' : debugEnabled ? 'Marquee / Ticker' : ''
+
     return (
       <section className="layer4__box layer4__marquee" style={marqueeStyle}>
-        <div className="layer4__text layer4__text--marquee">
-          {debugEnabled ? 'Marquee / Ticker' : ''}
+        <div
+          className={`layer4__text layer4__text--marquee ${loadError ? 'layer4__text--warning' : ''}`}
+        >
+          {fallbackText}
         </div>
       </section>
     )
@@ -682,10 +790,24 @@ function Layer4MainContent({ mediaType, materials, revision, debugEnabled }: Lay
   const [preloadError, setPreloadError] = useState<{ key: string; message: string } | null>(null)
 
   useEffect(() => {
-    if (selection.reason === 'unsafe' && materials && debugEnabled) {
-      console.debug('[main-content] Ignored unsafe filename', materials)
+    if (selection.reason === 'unsafe' && materials) {
+      warnMediaIssue({
+        filename: materials,
+        src: null,
+        layer: 'layer4-main-content',
+        message: 'Ignored unsafe main content filename',
+      })
     }
-  }, [debugEnabled, materials, selection.reason])
+
+    if (selection.reason === 'unsupported' && materials) {
+      warnMediaIssue({
+        filename: materials,
+        src: null,
+        layer: 'layer4-main-content',
+        message: 'Unsupported main content media type',
+      })
+    }
+  }, [materials, selection.reason])
 
   useEffect(() => {
     const source = selection.source
@@ -716,13 +838,13 @@ function Layer4MainContent({ mediaType, materials, revision, debugEnabled }: Lay
         key: source.key,
         message: errorMessage,
       })
-      if (debugEnabled) {
-        console.debug('[main-content] Failed to preload media', {
-          filename: source.filename,
-          kind: source.kind,
-          error,
-        })
-      }
+      warnMediaIssue({
+        filename: source.filename,
+        src: source.src,
+        layer: 'layer4-main-content',
+        message: errorMessage,
+        error,
+      })
     }
 
     timeoutId = window.setTimeout(() => {
@@ -810,9 +932,15 @@ function Layer4MainContent({ mediaType, materials, revision, debugEnabled }: Lay
       }
       cleanup()
     }
-  }, [debugEnabled, revision, selection.source])
+  }, [revision, selection.source])
 
   const handleRuntimeError = useCallback((source: MainContentSource) => {
+    warnMediaIssue({
+      filename: source.filename,
+      src: source.src,
+      layer: 'layer4-main-content',
+      message: 'Main content unavailable (playback error)',
+    })
     setDisplayedSource(null)
     setPreloadError({
       key: source.key,
