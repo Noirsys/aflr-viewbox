@@ -106,3 +106,7 @@
 **- \[x] 310 Rate-limit / debounce rapid WS updates to prevent render thrash**
 
 **- \[x] 320 Add telemetry hooks (console / optional endpoint) for agent debugging**
+
+**### Manual Operations**
+
+**- \[x] 330 Build dedicated manual Control Board with protocol-safe sending, reconnect queueing, and studio/viewbox/controller UI modes**

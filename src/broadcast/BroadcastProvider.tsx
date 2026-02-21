@@ -1,7 +1,12 @@
-import { useEffect, useMemo, useReducer, useRef } from 'react'
+import { useCallback, useEffect, useMemo, useReducer, useRef, useState } from 'react'
 import type { ReactNode } from 'react'
 import { broadcastReducer, initialState } from './reducer'
-import type { BroadcastMessage, BroadcastState } from './types'
+import type {
+  BroadcastMessage,
+  BroadcastState,
+  OutboundEnvelope,
+  SendEnvelopeResult,
+} from './types'
 import { parseIncomingMessage } from './protocol'
 import type { MessageParseTelemetryEvent } from './protocol'
 import { createTelemetryReporter, normalizeTelemetryEndpoint } from './telemetry'
@@ -9,14 +14,21 @@ import { BroadcastContext } from './context'
 
 const WS_URL = import.meta.env.VITE_WS_URL || 'ws://localhost:8088'
 const MESSAGE_BATCH_WINDOW_MS = 16
+const OUTBOUND_QUEUE_LIMIT = 256
+
+const describeError = (error: unknown) =>
+  error instanceof Error ? error.message : String(error)
 
 export function BroadcastProvider({ children }: { children: ReactNode }) {
   const [state, dispatch] = useReducer(broadcastReducer, initialState)
+  const [outboundQueueSize, setOutboundQueueSize] = useState(0)
+
   const reconnectAttemptRef = useRef(0)
   const reconnectTimeoutRef = useRef<number | null>(null)
   const flushTimeoutRef = useRef<number | null>(null)
   const socketRef = useRef<WebSocket | null>(null)
   const messageQueueRef = useRef<BroadcastMessage[]>([])
+  const outboundQueueRef = useRef<OutboundEnvelope[]>([])
 
   const debugEnabled = useMemo(() => {
     if (typeof window === 'undefined') {
@@ -45,10 +57,137 @@ export function BroadcastProvider({ children }: { children: ReactNode }) {
     [debugEnabled, telemetryEndpoint],
   )
 
+  const telemetryRef = useRef(telemetry)
+  const debugEnabledRef = useRef(debugEnabled)
+
+  useEffect(() => {
+    telemetryRef.current = telemetry
+  }, [telemetry])
+
+  useEffect(() => {
+    debugEnabledRef.current = debugEnabled
+  }, [debugEnabled])
+
+  const queueOutboundMessage = useCallback((envelope: OutboundEnvelope) => {
+    if (outboundQueueRef.current.length >= OUTBOUND_QUEUE_LIMIT) {
+      const dropped = outboundQueueRef.current.shift()
+      telemetryRef.current(
+        'ws_outbound_queue_dropped',
+        {
+          queueLimit: OUTBOUND_QUEUE_LIMIT,
+          droppedMessageType: dropped?.type ?? null,
+        },
+        'warn',
+      )
+    }
+
+    outboundQueueRef.current.push(envelope)
+    const nextQueueSize = outboundQueueRef.current.length
+    setOutboundQueueSize(nextQueueSize)
+
+    telemetryRef.current(
+      'ws_outbound_queued',
+      {
+        messageType: envelope.type,
+        queueSize: nextQueueSize,
+      },
+      'warn',
+    )
+
+    if (debugEnabledRef.current) {
+      console.debug('[ws] Queued outbound message', envelope.type, {
+        queueSize: nextQueueSize,
+      })
+    }
+
+    return nextQueueSize
+  }, [])
+
+  const sendEnvelope = useCallback(
+    (envelope: OutboundEnvelope): SendEnvelopeResult => {
+      const socket = socketRef.current
+      if (socket && socket.readyState === WebSocket.OPEN) {
+        try {
+          socket.send(JSON.stringify(envelope))
+          telemetryRef.current('ws_outbound_sent', {
+            messageType: envelope.type,
+            queued: false,
+          })
+          return { status: 'sent' }
+        } catch (error) {
+          telemetryRef.current(
+            'ws_outbound_send_failed',
+            {
+              messageType: envelope.type,
+              error: describeError(error),
+            },
+            'warn',
+          )
+        }
+      }
+
+      const queueSize = queueOutboundMessage(envelope)
+      return { status: 'queued', queueSize }
+    },
+    [queueOutboundMessage],
+  )
+
+  const requestState = useCallback(
+    (): SendEnvelopeResult =>
+      sendEnvelope({
+        type: 'requestState',
+        timestamp: Date.now(),
+        data: {},
+      }),
+    [sendEnvelope],
+  )
+
+  const flushOutboundQueue = useCallback(() => {
+    const socket = socketRef.current
+    if (!socket || socket.readyState !== WebSocket.OPEN || outboundQueueRef.current.length === 0) {
+      return 0
+    }
+
+    const pending = [...outboundQueueRef.current]
+    outboundQueueRef.current = []
+    setOutboundQueueSize(0)
+
+    let sentCount = 0
+
+    for (let index = 0; index < pending.length; index += 1) {
+      const message = pending[index]
+
+      try {
+        socket.send(JSON.stringify(message))
+        sentCount += 1
+      } catch (error) {
+        const unsent = pending.slice(index)
+        outboundQueueRef.current = unsent
+        setOutboundQueueSize(unsent.length)
+        telemetryRef.current(
+          'ws_outbound_flush_failed',
+          {
+            messageType: message.type,
+            unsentCount: unsent.length,
+            error: describeError(error),
+          },
+          'warn',
+        )
+        break
+      }
+    }
+
+    if (sentCount > 0) {
+      telemetryRef.current('ws_outbound_flushed', {
+        count: sentCount,
+      })
+    }
+
+    return sentCount
+  }, [])
+
   useEffect(() => {
     let isActive = true
-    const describeError = (error: unknown) =>
-      error instanceof Error ? error.message : String(error)
 
     const handleParseTelemetry = (event: MessageParseTelemetryEvent) => {
       if (event.outcome === 'parsed') {
@@ -175,37 +314,6 @@ export function BroadcastProvider({ children }: { children: ReactNode }) {
       const socket = new WebSocket(WS_URL)
       socketRef.current = socket
 
-      const sendRequestState = () => {
-        if (socket.readyState !== WebSocket.OPEN) {
-          return
-        }
-
-        const payload = {
-          type: 'requestState',
-          timestamp: Date.now(),
-          data: {},
-        }
-
-        try {
-          socket.send(JSON.stringify(payload))
-          telemetry('ws_request_state_sent')
-          if (debugEnabled) {
-            console.debug('[ws] Sent requestState')
-          }
-        } catch (error) {
-          telemetry(
-            'ws_request_state_failed',
-            {
-              error: describeError(error),
-            },
-            'warn',
-          )
-          if (debugEnabled) {
-            console.debug('[ws] Failed to send requestState', error)
-          }
-        }
-      }
-
       socket.addEventListener('open', () => {
         reconnectAttemptRef.current = 0
         updateStatus('connected')
@@ -213,7 +321,24 @@ export function BroadcastProvider({ children }: { children: ReactNode }) {
         if (debugEnabled) {
           console.debug('[ws] Connected')
         }
-        sendRequestState()
+
+        const flushedCount = flushOutboundQueue()
+        if (flushedCount === 0) {
+          const requestStateResult = requestState()
+          if (requestStateResult.status === 'queued' || requestStateResult.status === 'failed') {
+            telemetry(
+              'ws_request_state_failed',
+              {
+                status: requestStateResult.status,
+                queueSize:
+                  requestStateResult.status === 'queued' ? requestStateResult.queueSize : undefined,
+              },
+              'warn',
+            )
+          } else {
+            telemetry('ws_request_state_sent')
+          }
+        }
       })
 
       socket.addEventListener('message', (event) => {
@@ -266,15 +391,23 @@ export function BroadcastProvider({ children }: { children: ReactNode }) {
       clearReconnectTimer()
       clearFlushTimer()
       messageQueueRef.current = []
+      outboundQueueRef.current = []
       socketRef.current?.close()
       socketRef.current = null
       telemetry('ws_provider_stopped')
     }
-  }, [debugEnabled, telemetry, telemetryEndpoint])
+  }, [debugEnabled, flushOutboundQueue, requestState, telemetry, telemetryEndpoint])
 
-  return (
-    <BroadcastContext.Provider value={{ state, dispatch }}>
-      {children}
-    </BroadcastContext.Provider>
+  const contextValue = useMemo(
+    () => ({
+      state,
+      dispatch,
+      sendEnvelope,
+      requestState,
+      outboundQueueSize,
+    }),
+    [outboundQueueSize, requestState, sendEnvelope, state],
   )
+
+  return <BroadcastContext.Provider value={contextValue}>{children}</BroadcastContext.Provider>
 }

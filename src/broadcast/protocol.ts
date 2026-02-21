@@ -123,19 +123,25 @@ const parseStateSync = (data: Record<string, unknown>): StateSyncPayload => {
 
   if (isRecord(data.layer4)) {
     const layer4: StateSyncPayload['layer4'] = {}
+    const newscastTitle = readString(data.layer4.newscastTitle)
     const headline = readString(data.layer4.headline)
     const subtext = readString(data.layer4.subtext)
     const marquee = readString(data.layer4.marquee)
     const weather = data.layer4.weather
+    const time = readString(data.layer4.time)
     const mainContent = readString(data.layer4.mainContent)
+    const liveFeed = readString(data.layer4.liveFeed)
 
+    if (newscastTitle !== null) layer4.newscastTitle = newscastTitle
     if (headline !== null) layer4.headline = headline
     if (subtext !== null) layer4.subtext = subtext
     if (marquee !== null) layer4.marquee = marquee
     if (typeof weather === 'number' || typeof weather === 'string') {
       layer4.weather = weather
     }
+    if (time !== null) layer4.time = time
     if (mainContent !== null) layer4.mainContent = mainContent
+    if (liveFeed !== null) layer4.liveFeed = liveFeed
 
     if (Object.keys(layer4).length > 0) {
       payload.layer4 = layer4

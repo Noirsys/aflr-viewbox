@@ -21,6 +21,7 @@ exports[`broadcastReducer snapshots (message -> state) > backgroundaudioUpdate e
   },
   "layer4": {
     "headline": "",
+    "liveFeed": "",
     "mainContent": {
       "materials": null,
       "mediaType": null,
@@ -28,6 +29,7 @@ exports[`broadcastReducer snapshots (message -> state) > backgroundaudioUpdate e
     },
     "marqueeFile": null,
     "marqueeRevision": 0,
+    "newscastTitle": "ASHTABULA.FRONTLINE.REPORT",
     "subtext": "",
     "weather": null,
   },
@@ -65,6 +67,7 @@ exports[`broadcastReducer snapshots (message -> state) > backgroundvideoUpdate s
   },
   "layer4": {
     "headline": "",
+    "liveFeed": "",
     "mainContent": {
       "materials": null,
       "mediaType": null,
@@ -72,6 +75,7 @@ exports[`broadcastReducer snapshots (message -> state) > backgroundvideoUpdate s
     },
     "marqueeFile": null,
     "marqueeRevision": 0,
+    "newscastTitle": "ASHTABULA.FRONTLINE.REPORT",
     "subtext": "",
     "weather": null,
   },
@@ -109,6 +113,7 @@ exports[`broadcastReducer snapshots (message -> state) > emergencyAlert sets con
   },
   "layer4": {
     "headline": "",
+    "liveFeed": "",
     "mainContent": {
       "materials": null,
       "mediaType": null,
@@ -116,6 +121,7 @@ exports[`broadcastReducer snapshots (message -> state) > emergencyAlert sets con
     },
     "marqueeFile": null,
     "marqueeRevision": 0,
+    "newscastTitle": "ASHTABULA.FRONTLINE.REPORT",
     "subtext": "",
     "weather": null,
   },
@@ -153,6 +159,7 @@ exports[`broadcastReducer snapshots (message -> state) > fullStoryUpdate updates
   },
   "layer4": {
     "headline": "Breaking: Scanner Activity",
+    "liveFeed": "",
     "mainContent": {
       "materials": "story1.svg",
       "mediaType": "image",
@@ -160,6 +167,7 @@ exports[`broadcastReducer snapshots (message -> state) > fullStoryUpdate updates
     },
     "marqueeFile": null,
     "marqueeRevision": 0,
+    "newscastTitle": "ASHTABULA.FRONTLINE.REPORT",
     "subtext": "Multiple units dispatched - Stand by",
     "weather": null,
   },
@@ -197,6 +205,7 @@ exports[`broadcastReducer snapshots (message -> state) > fullscreenVideo shows l
   },
   "layer4": {
     "headline": "",
+    "liveFeed": "",
     "mainContent": {
       "materials": null,
       "mediaType": null,
@@ -204,6 +213,7 @@ exports[`broadcastReducer snapshots (message -> state) > fullscreenVideo shows l
     },
     "marqueeFile": null,
     "marqueeRevision": 0,
+    "newscastTitle": "ASHTABULA.FRONTLINE.REPORT",
     "subtext": "",
     "weather": null,
   },
@@ -241,6 +251,7 @@ exports[`broadcastReducer snapshots (message -> state) > headlineUpdate stores l
   },
   "layer4": {
     "headline": "Breaking: Structure Fire Reported",
+    "liveFeed": "",
     "mainContent": {
       "materials": null,
       "mediaType": null,
@@ -248,6 +259,7 @@ exports[`broadcastReducer snapshots (message -> state) > headlineUpdate stores l
     },
     "marqueeFile": null,
     "marqueeRevision": 0,
+    "newscastTitle": "ASHTABULA.FRONTLINE.REPORT",
     "subtext": "",
     "weather": null,
   },
@@ -285,6 +297,7 @@ exports[`broadcastReducer snapshots (message -> state) > hideLayer5 keeps visibi
   },
   "layer4": {
     "headline": "",
+    "liveFeed": "",
     "mainContent": {
       "materials": null,
       "mediaType": null,
@@ -292,6 +305,7 @@ exports[`broadcastReducer snapshots (message -> state) > hideLayer5 keeps visibi
     },
     "marqueeFile": null,
     "marqueeRevision": 0,
+    "newscastTitle": "ASHTABULA.FRONTLINE.REPORT",
     "subtext": "",
     "weather": null,
   },
@@ -329,6 +343,7 @@ exports[`broadcastReducer snapshots (message -> state) > mainContentUpdate incre
   },
   "layer4": {
     "headline": "",
+    "liveFeed": "",
     "mainContent": {
       "materials": "clip456.mp4",
       "mediaType": "video",
@@ -336,6 +351,7 @@ exports[`broadcastReducer snapshots (message -> state) > mainContentUpdate incre
     },
     "marqueeFile": null,
     "marqueeRevision": 0,
+    "newscastTitle": "ASHTABULA.FRONTLINE.REPORT",
     "subtext": "",
     "weather": null,
   },
@@ -373,6 +389,7 @@ exports[`broadcastReducer snapshots (message -> state) > mainaudioUpdate stores 
   },
   "layer4": {
     "headline": "",
+    "liveFeed": "",
     "mainContent": {
       "materials": null,
       "mediaType": null,
@@ -380,6 +397,7 @@ exports[`broadcastReducer snapshots (message -> state) > mainaudioUpdate stores 
     },
     "marqueeFile": null,
     "marqueeRevision": 0,
+    "newscastTitle": "ASHTABULA.FRONTLINE.REPORT",
     "subtext": "",
     "weather": null,
   },
@@ -417,6 +435,7 @@ exports[`broadcastReducer snapshots (message -> state) > marqueeUpdate stores ma
   },
   "layer4": {
     "headline": "",
+    "liveFeed": "",
     "mainContent": {
       "materials": null,
       "mediaType": null,
@@ -424,6 +443,7 @@ exports[`broadcastReducer snapshots (message -> state) > marqueeUpdate stores ma
     },
     "marqueeFile": "TOP_3366FF.txt",
     "marqueeRevision": 1,
+    "newscastTitle": "ASHTABULA.FRONTLINE.REPORT",
     "subtext": "",
     "weather": null,
   },
@@ -461,6 +481,7 @@ exports[`broadcastReducer snapshots (message -> state) > stateSync merges payloa
   },
   "layer4": {
     "headline": "State sync headline",
+    "liveFeed": "00:00 Unit: Copy",
     "mainContent": {
       "materials": "story999.svg",
       "mediaType": "image",
@@ -468,6 +489,7 @@ exports[`broadcastReducer snapshots (message -> state) > stateSync merges payloa
     },
     "marqueeFile": "TOP_3366FF.txt",
     "marqueeRevision": 2,
+    "newscastTitle": "ASHTABULA.FRONTLINE.REPORT",
     "subtext": "State sync subtext",
     "weather": 32,
   },
@@ -505,6 +527,7 @@ exports[`broadcastReducer snapshots (message -> state) > subtextUpdate stores la
   },
   "layer4": {
     "headline": "",
+    "liveFeed": "",
     "mainContent": {
       "materials": null,
       "mediaType": null,
@@ -512,6 +535,7 @@ exports[`broadcastReducer snapshots (message -> state) > subtextUpdate stores la
     },
     "marqueeFile": null,
     "marqueeRevision": 0,
+    "newscastTitle": "ASHTABULA.FRONTLINE.REPORT",
     "subtext": "Units responding near downtown
 Updates pending",
     "weather": null,
@@ -550,6 +574,7 @@ exports[`broadcastReducer snapshots (message -> state) > weatherUpdate stores nu
   },
   "layer4": {
     "headline": "",
+    "liveFeed": "",
     "mainContent": {
       "materials": null,
       "mediaType": null,
@@ -557,6 +582,7 @@ exports[`broadcastReducer snapshots (message -> state) > weatherUpdate stores nu
     },
     "marqueeFile": null,
     "marqueeRevision": 0,
+    "newscastTitle": "ASHTABULA.FRONTLINE.REPORT",
     "subtext": "",
     "weather": 34,
   },

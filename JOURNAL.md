@@ -283,3 +283,44 @@ pgrep -af 'scripts/ralph_forever.sh|scripts/ralph_once.sh|codex exec'
 1. `public/fixtures/` is generated content; avoid committing unless explicitly desired.
 2. Ralph scripts create temporary worktrees under `.ralph/worktrees` and logs under `.ralph/logs`.
 3. If candidate branches are reused, ensure stale worktrees are pruned/removed (script now handles this, but verify if process was interrupted).
+
+## Session 2026-02-16 - Manual Control Board and Skill Packaging
+
+### Scope
+1. Reworked frontend into a manual-operation-ready studio with a dedicated Control Board.
+2. Preserved protocol contract alignment from `docs/protocol.md` while expanding manual operator coverage.
+3. Added a reusable Agent Skill package for cross-agent/model controller migration.
+
+### Code Changes
+1. Broadcast provider
+- Added outbound message sending through provider context.
+- Added robust disconnected queueing for outbound envelopes.
+- Added queued-message flush on reconnect.
+- Exposed `sendEnvelope`, `requestState`, and outbound queue depth to UI.
+
+2. Viewbox and UI
+- Added query-driven UI modes: `studio` (default), `viewbox`, and `controller`.
+- Added dedicated `ManualController` panel (`src/controller/ManualController.tsx`).
+- Added protocol-safe form validation and send history.
+- Added presets for open/story/emergency operation flows.
+- Added raw envelope sender for controlled diagnostics.
+
+3. Layer4 fidelity updates
+- Added `newscastTitle` and `liveFeed` state fields.
+- Extended `stateSync` parsing and reducer merge behavior for title/live feed.
+- Added main-content media-type inference during `stateSync` when only filename is provided.
+- Updated Layer4 render path to display live-feed rows and title content.
+
+4. Tooling/docs
+- Updated `scripts/run-demo-show.ts` to include background video + layout sync.
+- Replaced placeholder `README.md` with project-accurate operation docs.
+- Updated `IMPLEMENTATION_PLAN.md` with item 330 (manual control board milestone).
+- Added skill package:
+  - `skills/aflr-broadcast-controller/SKILL.md`
+  - `skills/aflr-broadcast-controller/references/operations.md`
+  - `skills/aflr-broadcast-controller/references/protocol-message-cheatsheet.md`
+  - `skills/aflr-broadcast-controller/agents/openai.yaml`
+- Validated skill with `quick_validate.py`.
+
+### Validation Status
+- Build/verify/test execution follows after dependency sync (`npm ci`) and full `npm run verify`.

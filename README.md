@@ -1,99 +1,149 @@
-# React + TypeScript + Vite
+# aFLR Viewbox (React + Vite)
 
-This template provides a minimal setup to get React working in Vite with HMR and some ESLint rules.
+A contract-driven 1280x720 broadcast viewbox that is controlled through WebSocket JSON envelopes defined in `docs/protocol.md`.
 
-Currently, two official plugins are available:
+This implementation now includes a dedicated manual Control Board so we can run a full-quality broadcast manually while validating protocol behavior before agent automation is introduced.
 
-- [@vitejs/plugin-react](https://github.com/vitejs/vite-plugin-react/blob/main/packages/plugin-react) uses [Babel](https://babeljs.io/) (or [oxc](https://oxc.rs) when used in [rolldown-vite](https://vite.dev/guide/rolldown)) for Fast Refresh
-- [@vitejs/plugin-react-swc](https://github.com/vitejs/vite-plugin-react/blob/main/packages/plugin-react-swc) uses [SWC](https://swc.rs/) for Fast Refresh
+## What is in this repo
 
-## React Compiler
+- A deterministic 1280x720 render stage with layered broadcast composition (Layers 1-5)
+- WebSocket protocol parser + reducer with safe handling of invalid/unknown messages
+- Automatic reconnect with exponential backoff + `requestState` on connect
+- Dedicated manual Control Board UI for sending protocol-valid commands to the WS server
+- Demo scripts and smoke tooling for end-to-end validation
 
-The React Compiler is not enabled on this template because of its impact on dev & build performances. To add it, see [this documentation](https://react.dev/learn/react-compiler/installation).
+## Quick start
 
-## Expanding the ESLint configuration
-
-If you are developing a production application, we recommend updating the configuration to enable type-aware lint rules:
-
-```js
-export default defineConfig([
-  globalIgnores(['dist']),
-  {
-    files: ['**/*.{ts,tsx}'],
-    extends: [
-      // Other configs...
-
-      // Remove tseslint.configs.recommended and replace with this
-      tseslint.configs.recommendedTypeChecked,
-      // Alternatively, use this for stricter rules
-      tseslint.configs.strictTypeChecked,
-      // Optionally, add this for stylistic rules
-      tseslint.configs.stylisticTypeChecked,
-
-      // Other configs...
-    ],
-    languageOptions: {
-      parserOptions: {
-        project: ['./tsconfig.node.json', './tsconfig.app.json'],
-        tsconfigRootDir: import.meta.dirname,
-      },
-      // other options...
-    },
-  },
-])
-```
-
-You can also install [eslint-plugin-react-x](https://github.com/Rel1cx/eslint-react/tree/main/packages/plugins/eslint-plugin-react-x) and [eslint-plugin-react-dom](https://github.com/Rel1cx/eslint-react/tree/main/packages/plugins/eslint-plugin-react-dom) for React-specific lint rules:
-
-```js
-// eslint.config.js
-import reactX from 'eslint-plugin-react-x'
-import reactDom from 'eslint-plugin-react-dom'
-
-export default defineConfig([
-  globalIgnores(['dist']),
-  {
-    files: ['**/*.{ts,tsx}'],
-    extends: [
-      // Other configs...
-      // Enable lint rules for React
-      reactX.configs['recommended-typescript'],
-      // Enable lint rules for React DOM
-      reactDom.configs.recommended,
-    ],
-    languageOptions: {
-      parserOptions: {
-        project: ['./tsconfig.node.json', './tsconfig.app.json'],
-        tsconfigRootDir: import.meta.dirname,
-      },
-      // other options...
-    },
-  },
-])
-```
-
-## Ralph Automation
-
-A long-running Codex orchestration workflow is available in `scripts/RALPH.md`.
-
-Quick run:
+1. Install dependencies:
 
 ```bash
-DRY_RUN=1 scripts/ralph_once.sh
+npm ci
 ```
 
-## PR Auto-Merge
-
-Label-based auto-merge is enabled via `.github/workflows/pr-automerge.yml`.
-
-Arm a PR from CLI:
+2. Start a local relay (optional but recommended for local dev):
 
 ```bash
-scripts/pr_automerge.sh <pr-number>
+npm run ws:relay
 ```
 
-Arm all currently open PRs:
+3. Start the frontend:
 
 ```bash
-scripts/pr_automerge.sh --all
+npm run dev
 ```
+
+Default WS URL is `ws://localhost:8088` and can be changed with `VITE_WS_URL`.
+
+## UI modes
+
+Use query param `ui`:
+
+- `?ui=studio` (default): Viewbox + Manual Control Board on one page
+- `?ui=viewbox`: Viewbox only (capture-safe rendering surface)
+- `?ui=controller`: Control Board only (operate from a separate tab/display)
+
+Additional dev flags:
+
+- `?debug=1` shows telemetry/debug overlays
+- `?guides=1` draws layer-4 layout guides from `docs/viewbox_spec.md`
+
+## Manual controller behavior
+
+The Control Board sends envelopes directly through the provider WS connection:
+
+- Sends immediately when connected
+- Queues messages when disconnected
+- Flushes queued messages on reconnect
+- Shows connection status, queue depth, send history, and validation errors
+
+Control sections cover all protocol message families:
+
+- Layer1/Layer2 media
+- Layer4 text/story/main-content/weather/marquee
+- Layer5 fullscreen + emergency alert
+- `stateSync` helper for title/live-feed layout sync
+- Raw JSON envelope sender for diagnostics
+
+## Media asset locations
+
+Place test assets under `public/media/**` so they resolve to `/media/**`:
+
+- `public/media/layer1/` -> `/media/layer1/`
+- `public/media/layer2/` -> `/media/layer2/`
+- `public/media/layer3/` -> `/media/layer3/`
+- `public/media/layer5/` -> `/media/layer5/`
+- `public/media/content/` -> `/media/content/`
+- `public/media/audio/` -> `/media/audio/`
+- `public/media/marquee/` -> `/media/marquee/`
+
+## Demo and validation scripts
+
+Run a scripted demo show:
+
+```bash
+node --experimental-strip-types scripts/run-demo-show.ts --seed
+```
+
+Run a legacy asset regression show (DB + real media correlations):
+
+```bash
+npm run show:legacy -- --max-stories 15
+```
+
+`show:legacy` reads narration durations with `ffprobe` and paces each story so clips are not cut off.
+It also starts with an opening jingle before story narration begins.
+
+Run live operator mode (non-scripted, real-time command console):
+
+```bash
+npm run live:legacy
+```
+
+Example live commands:
+
+- `list 20`
+- `next`
+- `force-next`
+- `story 204`
+- `force-story 237`
+- `alt`
+- `status`
+- `break`
+- `alert <text>`
+- `clear-alert`
+
+Live timing behavior:
+- Startup applies a short opening lock so intro jingle + fullscreen opening can play before first story narration.
+- `next` / `story <id>` queue while narration is active.
+- `force-next` / `force-story <id>` now trigger a breaking package (fullscreen breaking video + stinger audio) before cutting over.
+
+Cast-Assist standard and tuning guide:
+- `docs/cast_assist_system_standard.md`
+- `scripts/cast-assist/config.ts`
+- `scripts/cast-assist/timing.ts`
+
+Run smoke e2e:
+
+```bash
+npm run smoke:e2e -- --seed
+```
+
+Run full verification:
+
+```bash
+npm run verify
+```
+
+## Contract references
+
+- Protocol contract: `docs/protocol.md`
+- Pixel/layout spec: `docs/viewbox_spec.md`
+- Source paper reference: `docs/nFLR.pdf`
+
+## Agent Skill
+
+Reusable skill package for future agent/controller migrations:
+
+- `skills/aflr-broadcast-controller/SKILL.md`
+- `skills/aflr-broadcast-controller/references/operations.md`
+- `skills/aflr-broadcast-controller/references/protocol-message-cheatsheet.md`

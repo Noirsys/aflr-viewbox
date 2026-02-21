@@ -1,0 +1,4 @@
+interface:
+  display_name: "aFLR Broadcast Controller"
+  short_description: "Operate aFLR viewbox control board and WS protocol flows"
+  default_prompt: "Use this skill to run manual aFLR broadcasts via studio/controller modes and protocol-safe message control."

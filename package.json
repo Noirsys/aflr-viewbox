@@ -12,7 +12,9 @@
     "preview": "vite preview",
     "verify": "npm run fixtures && npm run build && npm run test --if-present && npm run lint --if-present",
     "ws:relay": "node --experimental-strip-types scripts/ws-relay.ts",
-    "smoke:e2e": "node --experimental-strip-types scripts/smoke-e2e.ts"
+    "smoke:e2e": "node --experimental-strip-types scripts/smoke-e2e.ts",
+    "show:legacy": "node --experimental-strip-types scripts/run-legacy-real-show.ts",
+    "live:legacy": "node --experimental-strip-types scripts/live-legacy-driver.ts"
   },
   "dependencies": {
     "react": "^19.2.0",

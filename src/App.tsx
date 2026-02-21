@@ -3,9 +3,11 @@ import type { CSSProperties, SyntheticEvent } from 'react'
 import './App.css'
 import type { MainContentMediaType } from './broadcast/types'
 import { useBroadcast } from './broadcast/useBroadcast'
+import { ManualController } from './controller/ManualController'
 
 const DEBUG_QUERY = 'debug'
 const GUIDES_QUERY = 'guides'
+const UI_MODE_QUERY = 'ui'
 const MARQUEE_SCROLL_PX_PER_SECOND = 110
 const MARQUEE_DEFAULT_BACKGROUND = 'rgba(15, 23, 42, 0.72)'
 const MARQUEE_SEPARATOR = ' • '
@@ -15,6 +17,7 @@ const MAIN_CONTENT_PRELOAD_TIMEOUT_MS = 10000
 const MAIN_CONTENT_IMAGE_EXTENSIONS = new Set(['png', 'jpg', 'jpeg', 'gif', 'svg', 'webp'])
 const MAIN_CONTENT_VIDEO_EXTENSIONS = new Set(['mp4', 'webm', 'mov', 'm4v'])
 const MAIN_CONTENT_AUDIO_EXTENSIONS = new Set(['mp3', 'wav', 'ogg', 'm4a', 'aac'])
+const LOOPING_LAYER1_AUDIO_PATTERN = /(bed|loop|ambient)/iu
 
 type MediaWarningDetails = {
   filename?: string | null
@@ -173,8 +176,23 @@ function useGuidesEnabled() {
   return new URLSearchParams(window.location.search).get(GUIDES_QUERY) === '1'
 }
 
+type AppMode = 'viewbox' | 'controller' | 'studio'
+
+function useAppMode(): AppMode {
+  if (typeof window === 'undefined') {
+    return 'studio'
+  }
+
+  const mode = new URLSearchParams(window.location.search).get(UI_MODE_QUERY)
+  if (mode === 'viewbox' || mode === 'controller' || mode === 'studio') {
+    return mode
+  }
+
+  return 'studio'
+}
+
 function DebugPanel() {
-  const { state } = useBroadcast()
+  const { state, outboundQueueSize } = useBroadcast()
   const stateDump = JSON.stringify(state, null, 2)
 
   return (
@@ -184,6 +202,7 @@ function DebugPanel() {
         <h3>Connection</h3>
         <p>Status: {state.connection.status}</p>
         <p>Reconnect Attempt: {state.connection.reconnectAttempt}</p>
+        <p>Outbound Queue: {outboundQueueSize}</p>
         {state.connection.lastError ? (
           <p className="debug-error">Error: {state.connection.lastError}</p>
         ) : null}
@@ -202,8 +221,10 @@ function DebugPanel() {
       </div>
       <div className="debug-section">
         <h3>Layer 4</h3>
+        <p>Title: {state.layer4.newscastTitle || '—'}</p>
         <p>Headline: {state.layer4.headline || '—'}</p>
         <p>Subtext: {state.layer4.subtext || '—'}</p>
+        <p>Live Feed: {state.layer4.liveFeed || '—'}</p>
         <p>
           Main Content: {state.layer4.mainContent.mediaType ?? '—'}
           {state.layer4.mainContent.materials
@@ -449,6 +470,82 @@ function Layer1MainAudio() {
   }, [filename, playFromQueue])
 
   return <audio ref={audioRef} onEnded={handleEnded} onError={handleAudioError} />
+}
+
+const shouldLoopLayer1Audio = (filename: string) =>
+  LOOPING_LAYER1_AUDIO_PATTERN.test(filename)
+
+function Layer1BackgroundAudio() {
+  const { state } = useBroadcast()
+  const audioRef = useRef<HTMLAudioElement | null>(null)
+  const pendingPlayRef = useRef<(() => void) | null>(null)
+  const [autoplayBlocked, setAutoplayBlocked] = useState(false)
+  const filename = state.layer1.backgroundAudioSrc?.trim() ?? null
+
+  useEffect(() => {
+    const audio = audioRef.current
+    if (!audio) return
+
+    if (!filename) {
+      audio.pause()
+      audio.removeAttribute('src')
+      audio.load()
+      pendingPlayRef.current = null
+      return
+    }
+
+    const resolvedSrc = `/media/layer1/${filename}`
+    audio.loop = shouldLoopLayer1Audio(filename)
+    if (audio.getAttribute('src') !== resolvedSrc) {
+      audio.src = resolvedSrc
+    }
+
+    const playPromise = audio.play()
+    if (!playPromise) {
+      return
+    }
+
+    playPromise
+      .then(() => {
+        setAutoplayBlocked(false)
+        pendingPlayRef.current = null
+      })
+      .catch(() => {
+        setAutoplayBlocked(true)
+        pendingPlayRef.current = () => {
+          audio.play().catch(() => null)
+        }
+      })
+  }, [filename])
+
+  useEffect(() => {
+    if (!autoplayBlocked || !pendingPlayRef.current) {
+      return
+    }
+
+    const resume = () => {
+      pendingPlayRef.current?.()
+    }
+
+    window.addEventListener('pointerdown', resume)
+    window.addEventListener('keydown', resume)
+    return () => {
+      window.removeEventListener('pointerdown', resume)
+      window.removeEventListener('keydown', resume)
+    }
+  }, [autoplayBlocked])
+
+  const handleAudioError = useCallback((errorEvent: SyntheticEvent<HTMLAudioElement>) => {
+    warnMediaIssue({
+      filename,
+      src: filename ? `/media/layer1/${filename}` : null,
+      layer: 'layer1-background-audio',
+      message: 'Background layer1 audio unavailable',
+      error: errorEvent.nativeEvent,
+    })
+  }, [filename])
+
+  return <audio ref={audioRef} onError={handleAudioError} />
 }
 
 type Layer5OverlayActiveProps = {
@@ -1058,12 +1155,16 @@ function Layer4Layout({ debugEnabled, guidesEnabled }: Layer4LayoutProps) {
 
   const withPlaceholder = (value: string | null | undefined, placeholder: string) =>
     value && value.length > 0 ? value : debugEnabled ? placeholder : ''
+  const liveFeedRows = state.layer4.liveFeed
+    .split(/\r?\n/u)
+    .map((line) => line.trim())
+    .filter((line) => line.length > 0)
 
   return (
     <div className={`layer4 ${guidesEnabled ? 'layer4--guides' : ''}`}>
       <section className="layer4__box layer4__title">
         <div className="layer4__text layer4__text--title">
-          {withPlaceholder(null, 'Newscast Title')}
+          {withPlaceholder(state.layer4.newscastTitle, 'Newscast Title')}
         </div>
       </section>
       <Layer4MainContent
@@ -1073,9 +1174,19 @@ function Layer4Layout({ debugEnabled, guidesEnabled }: Layer4LayoutProps) {
         debugEnabled={debugEnabled}
       />
       <section className="layer4__box layer4__live-feed">
-        <div className="layer4__text layer4__text--body">
-          {withPlaceholder(null, 'Live Feed / Stream')}
-        </div>
+        {liveFeedRows.length > 0 ? (
+          <ul className="layer4__live-feed-list" aria-label="Live feed stream">
+            {liveFeedRows.map((row, index) => (
+              <li key={`${index}-${row.slice(0, 32)}`} className="layer4__live-feed-row">
+                {row}
+              </li>
+            ))}
+          </ul>
+        ) : (
+          <div className="layer4__text layer4__text--body">
+            {withPlaceholder(null, 'Live Feed / Stream')}
+          </div>
+        )}
       </section>
       <section className="layer4__box layer4__headline">
         <div className="layer4__text layer4__text--headline">
@@ -1106,25 +1217,36 @@ function Layer4Layout({ debugEnabled, guidesEnabled }: Layer4LayoutProps) {
 function App() {
   const debugEnabled = useDebugEnabled()
   const guidesEnabled = useGuidesEnabled()
+  const appMode = useAppMode()
+  const showViewbox = appMode !== 'controller'
+  const showController = appMode !== 'viewbox'
+  const appClassName =
+    showViewbox && showController ? 'app app--studio' : 'app'
 
   return (
-    <div className="app">
-      <div className="viewbox-stage">
-        <div className="viewbox-layer viewbox-layer--1" aria-hidden="true">
-          <Layer1MainAudio />
-        </div>
-        <div className="viewbox-layer viewbox-layer--2" aria-hidden="true">
-          <Layer2BackgroundVideo />
-        </div>
-        <div className="viewbox-layer viewbox-layer--3" aria-hidden="true" />
-        <div className="viewbox-layer viewbox-layer--4">
-          <Layer4Layout debugEnabled={debugEnabled} guidesEnabled={guidesEnabled} />
-        </div>
-        <div className="viewbox-layer viewbox-layer--5">
-          <Layer5Overlay />
-        </div>
-        {debugEnabled ? <DebugOverlay /> : null}
-      </div>
+    <div className={appClassName}>
+      {showViewbox ? (
+        <section className="app__viewbox-pane">
+          <div className="viewbox-stage">
+            <div className="viewbox-layer viewbox-layer--1" aria-hidden="true">
+              <Layer1BackgroundAudio />
+              <Layer1MainAudio />
+            </div>
+            <div className="viewbox-layer viewbox-layer--2" aria-hidden="true">
+              <Layer2BackgroundVideo />
+            </div>
+            <div className="viewbox-layer viewbox-layer--3" aria-hidden="true" />
+            <div className="viewbox-layer viewbox-layer--4">
+              <Layer4Layout debugEnabled={debugEnabled} guidesEnabled={guidesEnabled} />
+            </div>
+            <div className="viewbox-layer viewbox-layer--5">
+              <Layer5Overlay />
+            </div>
+            {debugEnabled ? <DebugOverlay /> : null}
+          </div>
+        </section>
+      ) : null}
+      {showController ? <ManualController /> : null}
       {debugEnabled ? <DebugPanel /> : null}
     </div>
   )

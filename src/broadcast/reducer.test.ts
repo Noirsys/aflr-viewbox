@@ -179,11 +179,13 @@ describe('broadcastReducer snapshots (message -> state)', () => {
           layer1: { activeAudio: 'bed.wav', volume: 0.4 },
           layer2: { activeVideo: 'aFLR_LOOP_ScCo.mp4' },
           layer4: {
+            newscastTitle: 'ASHTABULA.FRONTLINE.REPORT',
             headline: 'State sync headline',
             subtext: 'State sync subtext',
             marquee: 'TOP_3366FF.txt',
             weather: '32',
             mainContent: 'story999.svg',
+            liveFeed: '00:00 Unit: Copy',
           },
           layer5: {
             activeVideo: 'aFLR_X_Opening.mp4',

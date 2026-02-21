@@ -17,6 +17,27 @@ export type BroadcastMessageType =
   | 'emergencyAlert'
   | 'stateSync'
 
+export type ClientMessageType = BroadcastMessageType | 'requestState'
+
+export interface OutboundEnvelope {
+  type: ClientMessageType
+  timestamp: number
+  data: Record<string, unknown>
+}
+
+export type SendEnvelopeResult =
+  | {
+      status: 'sent'
+    }
+  | {
+      status: 'queued'
+      queueSize: number
+    }
+  | {
+      status: 'failed'
+      error: string
+    }
+
 export type MainAudioCommand =
   | 'play_clip'
   | 'play_clip_sequence'
@@ -107,7 +128,10 @@ export interface StateSyncPayload {
     subtext?: string
     marquee?: string
     weather?: number | string
+    time?: string
+    newscastTitle?: string
     mainContent?: string
+    liveFeed?: string
   }
   layer5?: { activeVideo?: string | null; visible?: boolean; alertcontent?: string }
 }
@@ -146,8 +170,10 @@ export interface BroadcastState {
     backgroundVideoSrc: string | null
   }
   layer4: {
+    newscastTitle: string
     headline: string
     subtext: string
+    liveFeed: string
     mainContent: {
       mediaType: MainContentMediaType | null
       materials: string | null
@@ -188,4 +214,7 @@ export type BroadcastAction =
 export interface BroadcastContextValue {
   state: BroadcastState
   dispatch: Dispatch<BroadcastAction>
+  sendEnvelope: (envelope: OutboundEnvelope) => SendEnvelopeResult
+  requestState: () => SendEnvelopeResult
+  outboundQueueSize: number
 }

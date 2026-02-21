@@ -2,8 +2,23 @@
   display: flex;
   flex-direction: column;
   align-items: center;
-  gap: 24px;
-  padding: 24px;
+  gap: 20px;
+  padding: 20px;
+  width: 100%;
+  max-width: 1920px;
+  margin: 0 auto;
+}
+
+.app--studio {
+  flex-direction: row;
+  align-items: flex-start;
+  justify-content: center;
+}
+
+.app__viewbox-pane {
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
 }
 
 .viewbox-stage {
@@ -305,6 +320,32 @@
   top: 36px;
   width: 546px;
   height: 524px;
+  align-items: flex-start;
+  justify-content: flex-start;
+  padding: 14px 16px;
+  overflow: hidden;
+}
+
+.layer4__live-feed-list {
+  margin: 0;
+  padding: 0;
+  width: 100%;
+  list-style: none;
+  display: flex;
+  flex-direction: column;
+  gap: 11px;
+  font-size: 33px;
+  line-height: 1.08;
+  font-weight: 700;
+  color: #e2e8f0;
+  text-shadow: 0 1px 0 rgba(2, 6, 23, 0.75);
+}
+
+.layer4__live-feed-row {
+  width: 100%;
+  text-align: left;
+  overflow: hidden;
+  text-overflow: ellipsis;
 }
 
 .layer4__headline {
@@ -527,7 +568,279 @@
   color: #fca5a5;
 }
 
+.controller-board {
+  width: min(760px, 100%);
+  border: 1px solid #334155;
+  border-radius: 14px;
+  background:
+    linear-gradient(180deg, rgba(15, 23, 42, 0.96), rgba(2, 6, 23, 0.95));
+  color: #e2e8f0;
+  box-shadow: 0 20px 50px rgba(2, 6, 23, 0.5);
+  padding: 16px;
+  display: flex;
+  flex-direction: column;
+  gap: 14px;
+  max-height: calc(100vh - 40px);
+  overflow: auto;
+}
+
+.controller-board__header {
+  display: flex;
+  justify-content: space-between;
+  align-items: flex-start;
+  gap: 12px;
+}
+
+.controller-board__header h2 {
+  margin: 0;
+  font-size: 1.3rem;
+  text-transform: uppercase;
+  letter-spacing: 0.08em;
+  color: #bfdbfe;
+}
+
+.controller-board__header p {
+  margin-top: 6px;
+  color: #cbd5e1;
+  font-size: 0.85rem;
+}
+
+.controller-connection-card {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  padding: 10px 12px;
+  border: 1px solid rgba(148, 163, 184, 0.3);
+  border-radius: 10px;
+  background: rgba(15, 23, 42, 0.68);
+  min-width: 230px;
+  font-size: 0.78rem;
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+}
+
+.controller-status {
+  display: inline-flex;
+  align-items: center;
+  width: fit-content;
+  padding: 3px 8px;
+  border-radius: 999px;
+  font-size: 0.72rem;
+  font-weight: 700;
+}
+
+.controller-status--connected {
+  background: rgba(22, 163, 74, 0.22);
+  color: #86efac;
+}
+
+.controller-status--connecting {
+  background: rgba(59, 130, 246, 0.2);
+  color: #93c5fd;
+}
+
+.controller-status--disconnected {
+  background: rgba(220, 38, 38, 0.2);
+  color: #fca5a5;
+}
+
+.controller-status-error {
+  color: #fecaca;
+}
+
+.controller-notice {
+  margin: 0;
+  border-radius: 8px;
+  padding: 10px 12px;
+  font-size: 0.85rem;
+}
+
+.controller-notice--success {
+  background: rgba(22, 163, 74, 0.18);
+  border: 1px solid rgba(134, 239, 172, 0.35);
+  color: #bbf7d0;
+}
+
+.controller-notice--warn {
+  background: rgba(180, 83, 9, 0.18);
+  border: 1px solid rgba(251, 191, 36, 0.35);
+  color: #fde68a;
+}
+
+.controller-notice--error {
+  background: rgba(185, 28, 28, 0.22);
+  border: 1px solid rgba(252, 165, 165, 0.45);
+  color: #fecaca;
+}
+
+.controller-section {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+  border: 1px solid rgba(148, 163, 184, 0.25);
+  border-radius: 12px;
+  background: rgba(30, 41, 59, 0.45);
+  padding: 12px;
+}
+
+.controller-section h3 {
+  margin: 0;
+  text-transform: uppercase;
+  letter-spacing: 0.08em;
+  font-size: 0.8rem;
+  color: #93c5fd;
+}
+
+.controller-grid {
+  display: grid;
+  gap: 10px;
+}
+
+.controller-grid--2 {
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+}
+
+.controller-grid--3 {
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+}
+
+.controller-field {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+
+.controller-field span {
+  font-size: 0.72rem;
+  text-transform: uppercase;
+  letter-spacing: 0.06em;
+  color: #cbd5e1;
+}
+
+.controller-field input,
+.controller-field textarea,
+.controller-field select {
+  width: 100%;
+  border: 1px solid rgba(148, 163, 184, 0.34);
+  border-radius: 8px;
+  background: rgba(15, 23, 42, 0.72);
+  color: #f8fafc;
+  padding: 8px 10px;
+  font-size: 0.9rem;
+  font-family: inherit;
+}
+
+.controller-field textarea {
+  resize: vertical;
+  min-height: 72px;
+}
+
+.controller-field input:focus,
+.controller-field textarea:focus,
+.controller-field select:focus {
+  outline: 2px solid rgba(96, 165, 250, 0.6);
+  outline-offset: 1px;
+}
+
+.controller-button-row {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+}
+
+.controller-button-row button {
+  border: 1px solid rgba(147, 197, 253, 0.45);
+  border-radius: 8px;
+  background:
+    linear-gradient(180deg, rgba(37, 99, 235, 0.34), rgba(30, 64, 175, 0.36));
+  color: #eff6ff;
+  padding: 8px 12px;
+  font-size: 0.8rem;
+  font-weight: 600;
+  letter-spacing: 0.03em;
+  text-transform: uppercase;
+  cursor: pointer;
+}
+
+.controller-button-row button:hover {
+  filter: brightness(1.08);
+}
+
+.controller-button-row button:active {
+  transform: translateY(1px);
+}
+
+.controller-history-empty {
+  margin: 0;
+  font-size: 0.85rem;
+  color: #cbd5e1;
+}
+
+.controller-history-list {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.controller-history-item {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  border: 1px solid rgba(148, 163, 184, 0.22);
+  border-radius: 8px;
+  background: rgba(15, 23, 42, 0.62);
+  padding: 8px 10px;
+  font-size: 0.8rem;
+}
+
+.controller-history-item--sent {
+  border-color: rgba(134, 239, 172, 0.35);
+}
+
+.controller-history-item--queued {
+  border-color: rgba(251, 191, 36, 0.42);
+}
+
+.controller-history-item--failed {
+  border-color: rgba(252, 165, 165, 0.42);
+}
+
+.controller-history-meta {
+  font-size: 0.7rem;
+  letter-spacing: 0.05em;
+  text-transform: uppercase;
+  color: #bfdbfe;
+}
+
+.app--studio .controller-board {
+  width: min(560px, 34vw);
+  min-width: 430px;
+}
+
 @media (max-width: 1320px) {
+  .app {
+    padding: 14px;
+  }
+
+  .app--studio {
+    flex-direction: column;
+    align-items: center;
+  }
+
+  .app--studio .controller-board {
+    width: 100%;
+    min-width: 0;
+    max-height: none;
+  }
+
+  .controller-grid--2,
+  .controller-grid--3 {
+    grid-template-columns: 1fr;
+  }
+
   .viewbox-stage {
     width: 100%;
     height: auto;

@@ -77,4 +77,41 @@ describe('parseIncomingMessage telemetry', () => {
       },
     ])
   })
+
+  it('parses stateSync payload with layer4 broadcast extras', () => {
+    const parsed = parseIncomingMessage(
+      JSON.stringify({
+        type: 'stateSync',
+        timestamp: 1700000002004,
+        data: {
+          layer4: {
+            newscastTitle: 'ASHTABULA.FRONTLINE.REPORT',
+            headline: 'State sync headline',
+            subtext: 'State sync subtext',
+            mainContent: 'story1.svg',
+            liveFeed: '00:00 Unit: Copy',
+            marquee: 'TOP_3366FF.txt',
+            weather: '33',
+          },
+        },
+      }),
+      false,
+    )
+
+    expect(parsed).toEqual({
+      type: 'stateSync',
+      timestamp: 1700000002004,
+      data: {
+        layer4: {
+          newscastTitle: 'ASHTABULA.FRONTLINE.REPORT',
+          headline: 'State sync headline',
+          subtext: 'State sync subtext',
+          mainContent: 'story1.svg',
+          liveFeed: '00:00 Unit: Copy',
+          marquee: 'TOP_3366FF.txt',
+          weather: '33',
+        },
+      },
+    })
+  })
 })

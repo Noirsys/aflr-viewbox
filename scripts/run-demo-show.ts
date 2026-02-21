@@ -312,8 +312,20 @@ async function runDemo(): Promise<void> {
   // === Begin show sequence ===
 
   // 0) Baseline: temperature and ticker
+  send("backgroundvideoUpdate", { videoSrc: "aFLR_LOOP_ScCo.mp4" });
   send("weatherUpdate", { temperature: 34 });
   send("marqueeUpdate", { marqueefile: "DEMO_TOP_3366FF.txt" });
+  send("stateSync", {
+    layer4: {
+      newscastTitle: "ASHTABULA.FRONTLINE.REPORT",
+      liveFeed: [
+        "00:00 Unit: We have a 15-36, copy.",
+        "08:32 Dispatch: Copy, SO-4, 10-39?",
+        "USER1: I completely disagree; rubbish",
+        "USER2: Who are you to judge?",
+      ].join("\\n"),
+    },
+  });
 
   // Optional: ambient bed
   send("backgroundaudioUpdate", { audioSrc: "demo_bed.wav" });

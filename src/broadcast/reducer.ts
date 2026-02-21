@@ -6,6 +6,9 @@ import type {
   StateSyncPayload,
 } from './types'
 
+const MAIN_CONTENT_IMAGE_EXTENSIONS = new Set(['png', 'jpg', 'jpeg', 'gif', 'svg', 'webp'])
+const MAIN_CONTENT_VIDEO_EXTENSIONS = new Set(['mp4', 'webm', 'mov', 'm4v'])
+
 export const initialState: BroadcastState = {
   connection: {
     status: 'disconnected',
@@ -25,8 +28,10 @@ export const initialState: BroadcastState = {
     backgroundVideoSrc: null,
   },
   layer4: {
+    newscastTitle: 'ASHTABULA.FRONTLINE.REPORT',
     headline: '',
     subtext: '',
+    liveFeed: '',
     mainContent: {
       mediaType: null,
       materials: null,
@@ -71,6 +76,25 @@ const coerceWeather = (value: number | string | undefined): number | null => {
   return null
 }
 
+const inferMainContentMediaType = (filename: string): MainContentMediaType | null => {
+  const dotIndex = filename.lastIndexOf('.')
+  if (dotIndex <= 0 || dotIndex === filename.length - 1) {
+    return null
+  }
+
+  const extension = filename.slice(dotIndex + 1).toLowerCase()
+
+  if (MAIN_CONTENT_IMAGE_EXTENSIONS.has(extension)) {
+    return 'image'
+  }
+
+  if (MAIN_CONTENT_VIDEO_EXTENSIONS.has(extension)) {
+    return 'video'
+  }
+
+  return null
+}
+
 const applyStateSync = (state: BroadcastState, payload: StateSyncPayload): BroadcastState => {
   const nextState: BroadcastState = { ...state }
 
@@ -97,19 +121,28 @@ const applyStateSync = (state: BroadcastState, payload: StateSyncPayload): Broad
 
   if (payload.layer4) {
     const hasMarqueeValue = payload.layer4.marquee !== undefined
+    const hasMainContentValue = payload.layer4.mainContent !== undefined
+    const inferredMainContentType = payload.layer4.mainContent
+      ? inferMainContentMediaType(payload.layer4.mainContent)
+      : null
+
     nextState.layer4 = {
       ...nextState.layer4,
+      newscastTitle: payload.layer4.newscastTitle ?? nextState.layer4.newscastTitle,
       headline: payload.layer4.headline ?? nextState.layer4.headline,
       subtext: payload.layer4.subtext ?? nextState.layer4.subtext,
+      liveFeed: payload.layer4.liveFeed ?? nextState.layer4.liveFeed,
       marqueeFile: payload.layer4.marquee ?? nextState.layer4.marqueeFile,
       marqueeRevision: hasMarqueeValue
         ? nextState.layer4.marqueeRevision + 1
         : nextState.layer4.marqueeRevision,
       weather: coerceWeather(payload.layer4.weather) ?? nextState.layer4.weather,
-      mainContent: payload.layer4.mainContent
+      mainContent: hasMainContentValue
         ? {
-            mediaType: nextState.layer4.mainContent.mediaType as MainContentMediaType | null,
-            materials: payload.layer4.mainContent,
+            mediaType:
+              inferredMainContentType ??
+              (nextState.layer4.mainContent.mediaType as MainContentMediaType | null),
+            materials: payload.layer4.mainContent ?? null,
             revision: nextState.layer4.mainContent.revision + 1,
           }
         : nextState.layer4.mainContent,
